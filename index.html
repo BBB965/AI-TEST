@@ -3,42 +3,21 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>AI-TEST · Todo</title>
-<link rel="stylesheet" href="style.css" />
+<title>직관 도장깨기</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone@7/babel.min.js"></script>
 </head>
 <body>
-  <main class="app">
-    <header class="app__header">
-      <h1>오늘 할 일</h1>
-      <p class="app__subtitle" id="summary">0개 중 0개 완료</p>
-    </header>
+  <div id="root"></div>
 
-    <form class="add-form" id="add-form">
-      <input
-        type="text"
-        id="task-input"
-        placeholder="할 일을 입력하고 Enter"
-        autocomplete="off"
-        maxlength="120"
-      />
-      <button type="submit">추가</button>
-    </form>
-
-    <div class="filters" id="filters">
-      <button class="filter-btn is-active" data-filter="all">전체</button>
-      <button class="filter-btn" data-filter="active">진행중</button>
-      <button class="filter-btn" data-filter="done">완료</button>
-    </div>
-
-    <ul class="task-list" id="task-list"></ul>
-
-    <p class="empty-state" id="empty-state">할 일이 없어요. 위에서 추가해보세요.</p>
-
-    <footer class="app__footer">
-      <button id="clear-done" type="button">완료 항목 지우기</button>
-    </footer>
-  </main>
-
-  <script src="script.js"></script>
+  <script src="src/data/stadiums.js"></script>
+  <script src="src/lib/storage.js"></script>
+  <script type="text/babel" src="src/components/StadiumSelector.jsx"></script>
+  <script type="text/babel" src="src/components/StadiumMap.jsx"></script>
+  <script type="text/babel" src="src/components/SeatModal.jsx"></script>
+  <script type="text/babel" src="src/App.jsx"></script>
+  <script type="text/babel" src="src/main.jsx"></script>
 </body>
 </html>
