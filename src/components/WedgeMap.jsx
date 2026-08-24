@@ -93,15 +93,15 @@ function formatDate(d) {
   return d;
 }
 
-window.StadiumMap = function StadiumMap({ stadium, onSectionClick }) {
-  const { viewBox, center, sections, screen } = stadium.map;
+window.WedgeMap = function WedgeMap({ venue, onSectionClick }) {
+  const { viewBox, center, sections, screen } = venue.map;
   const [hoverId, setHoverId] = React.useState(null);
   const [tooltip, setTooltip] = React.useState(null); // { section, entries, x, y }
   const containerRef = React.useRef(null);
 
   function handleEnter(e, section) {
     setHoverId(section.id);
-    const entries = window.getEntries(stadium.id, section.id);
+    const entries = window.getEntries(venue.id, section.id);
     if (entries.length === 0) {
       setTooltip(null);
       return;
@@ -127,7 +127,7 @@ window.StadiumMap = function StadiumMap({ stadium, onSectionClick }) {
         viewBox={viewBox}
         className="w-full h-auto select-none"
         role="img"
-        aria-label={stadium.name + " 구역도"}
+        aria-label={venue.name + " 구역도"}
       >
         <Field cx={center.cx} cy={center.cy} />
 
@@ -141,7 +141,7 @@ window.StadiumMap = function StadiumMap({ stadium, onSectionClick }) {
             section.endAngle,
             section.zone
           );
-          const conquered = window.isConquered(stadium.id, section.id);
+          const conquered = window.isConquered(venue.id, section.id);
           const mid = polarPoint(
             center.cx,
             center.cy,

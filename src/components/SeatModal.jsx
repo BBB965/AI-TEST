@@ -1,7 +1,26 @@
-function defaultSectionNumber(section) {
+function defaultSeatFloor(section) {
+  return (section.seatDefaults && section.seatDefaults.floor) || "";
+}
+
+function defaultSeatSection(section) {
+  if (section.seatDefaults && "section" in section.seatDefaults) return section.seatDefaults.section;
   const match = section.label && section.label.match(/\d+/);
   return match ? match[0] : "";
 }
+
+function defaultSeatRow(section) {
+  return (section.seatDefaults && section.seatDefaults.row) || "";
+}
+
+function defaultSeatNumber(section) {
+  return (section.seatDefaults && section.seatDefaults.number) || "";
+}
+
+const TITLE_PLACEHOLDER = {
+  baseball: "예: 키움 vs LG",
+  musical: "예: 뮤지컬 <엘리자벳>",
+  basketball: "예: SK vs LG",
+};
 
 function buildSeatLabel(seat) {
   const parts = [];
@@ -12,14 +31,14 @@ function buildSeatLabel(seat) {
   return parts.join(" ");
 }
 
-window.SeatModal = function SeatModal({ stadium, section, onClose, onSaved }) {
-  const [entries, setEntries] = React.useState(() => window.getEntries(stadium.id, section.id));
+window.SeatModal = function SeatModal({ venue, section, onClose, onSaved }) {
+  const [entries, setEntries] = React.useState(() => window.getEntries(venue.id, section.id));
   const [title, setTitle] = React.useState("");
   const [date, setDate] = React.useState("");
-  const [seatFloor, setSeatFloor] = React.useState("");
-  const [seatSection, setSeatSection] = React.useState(() => defaultSectionNumber(section));
-  const [seatRow, setSeatRow] = React.useState("");
-  const [seatNumber, setSeatNumber] = React.useState("");
+  const [seatFloor, setSeatFloor] = React.useState(() => defaultSeatFloor(section));
+  const [seatSection, setSeatSection] = React.useState(() => defaultSeatSection(section));
+  const [seatRow, setSeatRow] = React.useState(() => defaultSeatRow(section));
+  const [seatNumber, setSeatNumber] = React.useState(() => defaultSeatNumber(section));
   const [review, setReview] = React.useState("");
   const [photo, setPhoto] = React.useState(null);
   const [saving, setSaving] = React.useState(false);
@@ -51,7 +70,7 @@ window.SeatModal = function SeatModal({ stadium, section, onClose, onSaved }) {
         row: seatRow.trim(),
         number: seatNumber.trim(),
       };
-      const updated = window.addEntry(stadium.id, section.id, {
+      const updated = window.addEntry(venue.id, section.id, {
         title: title.trim(),
         date,
         seat,
@@ -62,10 +81,10 @@ window.SeatModal = function SeatModal({ stadium, section, onClose, onSaved }) {
       setEntries(updated);
       setTitle("");
       setDate("");
-      setSeatFloor("");
-      setSeatSection(defaultSectionNumber(section));
-      setSeatRow("");
-      setSeatNumber("");
+      setSeatFloor(defaultSeatFloor(section));
+      setSeatSection(defaultSeatSection(section));
+      setSeatRow(defaultSeatRow(section));
+      setSeatNumber(defaultSeatNumber(section));
       setReview("");
       setPhoto(null);
       onSaved();
@@ -77,7 +96,7 @@ window.SeatModal = function SeatModal({ stadium, section, onClose, onSaved }) {
   }
 
   function handleDelete(id) {
-    const updated = window.deleteEntry(stadium.id, section.id, id);
+    const updated = window.deleteEntry(venue.id, section.id, id);
     setEntries(updated);
     onSaved();
   }
@@ -93,7 +112,7 @@ window.SeatModal = function SeatModal({ stadium, section, onClose, onSaved }) {
       >
         <div className="flex items-center justify-between px-5 py-4 border-b border-neutral-100 sticky top-0 bg-white">
           <div>
-            <p className="text-xs text-neutral-400">{stadium.name}</p>
+            <p className="text-xs text-neutral-400">{venue.name}</p>
             <h2 className="text-lg font-bold">{section.label}</h2>
           </div>
           <button
@@ -112,7 +131,7 @@ window.SeatModal = function SeatModal({ stadium, section, onClose, onSaved }) {
             <input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="예: 키움 vs LG"
+              placeholder={TITLE_PLACEHOLDER[venue.category] || "예: 키움 vs LG"}
               className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-400"
             />
           </div>

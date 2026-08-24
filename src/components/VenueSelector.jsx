@@ -1,13 +1,13 @@
-window.StadiumSelector = function StadiumSelector({ stadiums, selectedId, onSelect }) {
+window.VenueSelector = function VenueSelector({ venues, selectedId, onSelect }) {
   return (
     <div className="flex gap-2 overflow-x-auto pb-1">
-      {stadiums.map((s) => {
-        const active = s.id === selectedId;
+      {venues.map((v) => {
+        const active = v.id === selectedId;
         return (
           <button
-            key={s.id}
+            key={v.id}
             type="button"
-            onClick={() => onSelect(s.id)}
+            onClick={() => onSelect(v.id)}
             className={
               "shrink-0 px-4 py-2 rounded-full text-sm font-medium border transition-colors " +
               (active
@@ -16,7 +16,7 @@ window.StadiumSelector = function StadiumSelector({ stadiums, selectedId, onSele
             }
             style={active ? { backgroundColor: window.BURGUNDY } : undefined}
           >
-            {s.name}
+            {v.name}
           </button>
         );
       })}
