@@ -105,13 +105,14 @@ window.BlockMap = function BlockMap({ venue, onSectionClick }) {
           ))}
 
         {sections.map((section) => {
-          const conquered = window.isConquered(venue.id, section.id);
+          const count = window.getEntries(venue.id, section.id).length;
+          const conquered = count > 0;
           const hovered = hoverId === section.id;
           const accent = window.categoryColor(venue.category);
           let fill = "#c7cad1";
           let fillOpacity = 1;
           if (conquered) {
-            fill = accent;
+            fill = window.seatColorForCount(venue.category, count);
           } else if (hovered) {
             fill = accent;
             fillOpacity = 0.45;

@@ -141,7 +141,8 @@ window.WedgeMap = function WedgeMap({ venue, onSectionClick }) {
             section.endAngle,
             section.zone
           );
-          const conquered = window.isConquered(venue.id, section.id);
+          const count = window.getEntries(venue.id, section.id).length;
+          const conquered = count > 0;
           const mid = polarPoint(
             center.cx,
             center.cy,
@@ -151,7 +152,7 @@ window.WedgeMap = function WedgeMap({ venue, onSectionClick }) {
           );
 
           let fill = section.zone === "outfield" ? "#dcecdf" : "#e5e7eb";
-          if (conquered) fill = window.categoryColor(venue.category);
+          if (conquered) fill = window.seatColorForCount(venue.category, count);
           else if (hoverId === section.id) fill = "#e7cdd3";
 
           return (
@@ -172,7 +173,7 @@ window.WedgeMap = function WedgeMap({ venue, onSectionClick }) {
                 textAnchor="middle"
                 dominantBaseline="middle"
                 className="pointer-events-none text-[13px] sm:text-[15px] font-bold"
-                fill={conquered ? "#ffffff" : "#374151"}
+                fill={conquered ? window.readableTextColor(fill) : "#374151"}
               >
                 {(() => {
                   const lines = section.shortLines || [section.label];

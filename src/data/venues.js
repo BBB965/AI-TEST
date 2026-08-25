@@ -19,6 +19,45 @@ window.categoryColor = function categoryColor(categoryId) {
   return window.CATEGORY_COLORS[categoryId] || window.BURGUNDY;
 };
 
+// 방문 횟수(count)에 따라 옅은 색 ~ 짙은 색 사이를 보간하기 위한 카테고리별 그라데이션.
+// max에 도달하면 가장 짙은 색으로 고정되고, 1회는 옅지만 눈에 띄는 색에서 시작한다.
+window.CATEGORY_GRADIENT = {
+  musical: { from: "#fde68a", to: "#c2410c", max: 10 }, // 옅은 노란색 -> 짙은 주황색
+  baseball: { from: "#e3b3bf", to: window.BURGUNDY, max: 20 }, // 옅은 버건디 -> 짙은 버건디
+  basketball: { from: "#86efac", to: "#15803d", max: 20 }, // 옅은 초록 -> 짙은 딥그린
+};
+
+function hexToRgb(hex) {
+  const n = parseInt(hex.replace("#", ""), 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function rgbToHex(rgb) {
+  return (
+    "#" +
+    rgb
+      .map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0"))
+      .join("")
+  );
+}
+
+// 정복한(count > 0) 구역의 채우기 색. count가 max에 가까울수록 진한 색이 된다.
+window.seatColorForCount = function seatColorForCount(categoryId, count) {
+  if (!count || count <= 0) return null;
+  const g = window.CATEGORY_GRADIENT[categoryId] || window.CATEGORY_GRADIENT.baseball;
+  const t = g.max <= 1 ? 1 : Math.min(1, (count - 1) / (g.max - 1));
+  const from = hexToRgb(g.from);
+  const to = hexToRgb(g.to);
+  return rgbToHex(from.map((c, i) => c + (to[i] - c) * t));
+};
+
+// 배경색 밝기에 맞춰 그 위에 놓일 글자색(검정/흰색)을 고른다.
+window.readableTextColor = function readableTextColor(hex) {
+  const [r, g, b] = hexToRgb(hex);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.6 ? "#1f2937" : "#ffffff";
+};
+
 function rangeNums(from, to) {
   const arr = [];
   for (let n = from; n <= to; n++) arr.push(n);
