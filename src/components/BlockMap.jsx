@@ -126,6 +126,8 @@ window.BlockMap = function BlockMap({ venue, onSectionClick }) {
               y={section.cy - size / 2}
               width={size}
               height={size}
+              rx={1.4}
+              ry={1.4}
               onClick={() => onSectionClick(section)}
               onMouseEnter={(e) => handleEnter(e, section)}
               onMouseLeave={handleLeave}
