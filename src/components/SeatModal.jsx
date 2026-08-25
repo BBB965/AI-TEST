@@ -70,7 +70,7 @@ window.SeatModal = function SeatModal({ venue, section, onClose, onSaved }) {
         row: seatRow.trim(),
         number: seatNumber.trim(),
       };
-      const updated = window.addEntry(venue.id, section.id, {
+      const updated = await window.addEntry(venue.id, section.id, {
         title: title.trim(),
         date,
         seat,
@@ -88,17 +88,21 @@ window.SeatModal = function SeatModal({ venue, section, onClose, onSaved }) {
       setReview("");
       setPhoto(null);
       onSaved();
-    } catch {
-      setError("저장에 실패했어요. 사진 용량을 줄여서 다시 시도해보세요.");
+    } catch (err) {
+      setError((err && err.message) || "저장에 실패했어요. 사진 용량을 줄여서 다시 시도해보세요.");
     } finally {
       setSaving(false);
     }
   }
 
-  function handleDelete(id) {
-    const updated = window.deleteEntry(venue.id, section.id, id);
-    setEntries(updated);
-    onSaved();
+  async function handleDelete(id) {
+    try {
+      const updated = await window.deleteEntry(venue.id, section.id, id);
+      setEntries(updated);
+      onSaved();
+    } catch (err) {
+      setError((err && err.message) || "삭제에 실패했어요.");
+    }
   }
 
   return (

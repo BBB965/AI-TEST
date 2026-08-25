@@ -5,6 +5,7 @@ window.App = function App() {
   const [venueId, setVenueId] = React.useState(venues[0] ? venues[0].id : null);
   const [selectedSection, setSelectedSection] = React.useState(null);
   const [version, setVersion] = React.useState(0);
+  const [loadingEntries, setLoadingEntries] = React.useState(true);
 
   React.useEffect(() => {
     const stillValid = venues.some((v) => v.id === venueId);
@@ -13,6 +14,20 @@ window.App = function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category]);
+
+  React.useEffect(() => {
+    if (!venueId) return;
+    let cancelled = false;
+    setLoadingEntries(true);
+    window.loadVenueEntries(venueId).then(() => {
+      if (cancelled) return;
+      setLoadingEntries(false);
+      setVersion((v) => v + 1);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [venueId]);
 
   const venue = venues.find((v) => v.id === venueId) || null;
   const conqueredCount = venue
@@ -68,8 +83,11 @@ window.App = function App() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold">{venue.name}</h2>
               <span className="text-xs text-neutral-400">
-                {conqueredCount} / {venue.map.sections.length}{" "}
-                {venue.map.kind === "wedge" ? "구역" : "좌석"} 완료
+                {loadingEntries
+                  ? "불러오는 중..."
+                  : `${conqueredCount} / ${venue.map.sections.length} ${
+                      venue.map.kind === "wedge" ? "구역" : "좌석"
+                    } 완료`}
               </span>
             </div>
             {venue.map.kind === "wedge" ? (
