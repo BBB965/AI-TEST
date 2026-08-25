@@ -7,6 +7,18 @@ window.CATEGORIES = [
   { id: "basketball", label: "농구" },
 ];
 
+// 카테고리별 강조 색(선택된 탭·정복한 좌석·기록 버튼·층 라벨 등에 쓰인다).
+// 눈에 잘 띄도록 선명한 톤으로 고른다.
+window.CATEGORY_COLORS = {
+  musical: "#facc15", // 선명한 노란색
+  baseball: window.BURGUNDY,
+  basketball: "#15803d", // 선명한 딥그린
+};
+
+window.categoryColor = function categoryColor(categoryId) {
+  return window.CATEGORY_COLORS[categoryId] || window.BURGUNDY;
+};
+
 function rangeNums(from, to) {
   const arr = [];
   for (let n = from; n <= to; n++) arr.push(n);
@@ -87,256 +99,43 @@ function gocheokSections() {
   ];
 }
 
-// 실제 좌석표(물랑루즈_블루스퀘어 등)를 보면 극장 구역은 매끈한 부채꼴이 아니라
-// "뒤쪽 대부분은 폭이 일정한 직사각형이고, 무대에 가까운 앞쪽 몇 줄만 계단식으로 좁아지는" 모양이다.
-// 옆 구역(A/C)은 중앙 쪽 변은 그대로 두고 바깥쪽(벽 쪽) 변만 계단식으로 깎이고,
-// 가운데 구역(B)은 양쪽이 대칭으로 계단식으로 깎여 앞쪽이 좁은 깔때기 모양이 된다.
+// 모든 층·모든 구역에서 줄 간격(위아래)과 좌석 간격(좌우)을 이 값으로 통일한다.
+// 층마다 줄 간격이 제각각이면 위아래로 눌리거나 늘어나 보이므로, 실제 좌석 수만큼 세로 폭도 함께 늘어나게 한다.
+const SEAT_RADIUS = 4.3; // 좌석 점 크기(예전 3.2~3.4보다 키움)
+const ROW_PITCH = 14; // 좌석이 커진 만큼 줄 간격도 비례해서 넓혀 서로 겹치지 않게 한다
+const SEAT_SPACING = 14;
+const FLOOR_GAP = 76; // 한 층의 마지막 줄과 다음 층 구역 라벨 사이 간격(층 구분을 강조하기 위해 넉넉히 띄운다)
+const ROW_LABEL_GAP = 10; // A/C 구역 끝에서 줄번호 라벨까지 거리
 
-// 한쪽 끝(anchorX)은 모든 줄에서 고정, 반대쪽 끝만 앞쪽 taperRows줄 동안 좌석 수가 1개씩 계단식으로 줄어드는 구역.
-function sideBlockSeats(opts) {
-  const {
-    blockId,
-    floorNum,
-    floorLabel,
-    blockLabel,
-    shortLine,
-    anchorX, // 중앙 쪽(고정) 변의 x
-    direction, // +1: 오른쪽으로 퍼짐(A구역), -1: 왼쪽으로 퍼짐(C구역)
-    fullSeats,
-    taperRows,
-    rows,
-    seatSpacing,
-    topY,
-    bottomY,
-  } = opts;
-  const rowPad = 9;
-  const usableTop = topY + rowPad;
-  const usableBottom = bottomY - rowPad;
-  const minSeats = Math.max(3, fullSeats - taperRows + 1);
+// 무대 한쪽 옆에 딱 붙은 좁은 박스석(1줄당 1석)을 세로로 쌓는다.
+// LG아트센터 1층/2층의 BL(발코니 왼쪽)·BR(브릿지 오른쪽) 박스석처럼 메인 구역보다 줄 수가 적은 경우에 쓴다.
+function wingColumn(id, floorNum, floorLabel, shortLine, x, topY, counts) {
   const seats = [];
-
-  for (let r = 0; r < rows; r++) {
-    const t = rows === 1 ? 0.5 : r / (rows - 1);
-    const y = usableTop + (usableBottom - usableTop) * t;
-    const count = r < taperRows ? minSeats + r : fullSeats;
-    const rowNum = r + 1;
-
+  let rowNum = 0;
+  counts.forEach((count, idx) => {
+    if (count <= 0) return;
+    rowNum += 1;
+    const y = topY + idx * ROW_PITCH;
     for (let s = 0; s < count; s++) {
-      const x = anchorX + direction * seatSpacing * (s + 1);
       const seatNum = s + 1;
       seats.push({
-        id: blockId + "-r" + rowNum + "-s" + seatNum,
+        id: id + "-r" + rowNum + "-s" + seatNum,
         kind: "seat",
-        cx: x,
+        cx: x + (s - (count - 1) / 2) * SEAT_SPACING,
         cy: y,
-        r: 3.4,
-        label: floorLabel + " " + blockLabel + " " + rowNum + "열 " + seatNum + "번",
-        seatDefaults: {
-          floor: String(floorNum),
-          section: shortLine,
-          row: String(rowNum),
-          number: String(seatNum),
-        },
+        r: SEAT_RADIUS,
+        label: floorLabel + " " + shortLine + "구역 " + rowNum + "열 " + seatNum + "번",
+        seatDefaults: { floor: String(floorNum), section: shortLine, row: String(rowNum), number: String(seatNum) },
       });
     }
-  }
-  return seats;
-}
-
-// 가운데 구역: 중심(centerX)을 기준으로 좌우 대칭, 앞쪽 taperRows줄 동안 양쪽이 계단식으로 좁아진다.
-function centerBlockSeats(opts) {
-  const {
-    blockId,
-    floorNum,
-    floorLabel,
-    blockLabel,
-    shortLine,
-    centerX,
-    halfFullSeats,
-    minHalfSeats,
-    taperRows,
-    rows,
-    seatSpacing,
-    topY,
-    bottomY,
-  } = opts;
-  const rowPad = 9;
-  const usableTop = topY + rowPad;
-  const usableBottom = bottomY - rowPad;
-  const seats = [];
-
-  for (let r = 0; r < rows; r++) {
-    const t = rows === 1 ? 0.5 : r / (rows - 1);
-    const y = usableTop + (usableBottom - usableTop) * t;
-    let halfCount;
-    if (r < taperRows) {
-      const step = (halfFullSeats - minHalfSeats) / (taperRows - 1 || 1);
-      halfCount = Math.round(minHalfSeats + step * r);
-    } else {
-      halfCount = halfFullSeats;
-    }
-    const rowNum = r + 1;
-    const rowSeats = [];
-    for (let k = 0; k < halfCount; k++) {
-      const offset = seatSpacing * (k + 0.5);
-      rowSeats.push(centerX - offset);
-      rowSeats.push(centerX + offset);
-    }
-    rowSeats.sort((a, b) => a - b);
-    rowSeats.forEach((x, i) => {
-      const seatNum = i + 1;
-      seats.push({
-        id: blockId + "-r" + rowNum + "-s" + seatNum,
-        kind: "seat",
-        cx: x,
-        cy: y,
-        r: 3.4,
-        label: floorLabel + " " + blockLabel + " " + rowNum + "열 " + seatNum + "번",
-        seatDefaults: {
-          floor: String(floorNum),
-          section: shortLine,
-          row: String(rowNum),
-          number: String(seatNum),
-        },
-      });
-    });
-  }
-  return seats;
-}
-
-// 계단식 테이퍼 없이 고정 크기로 채우는 작은 좌석 블록(사이드 박스석용).
-function fixedGridSeats(opts) {
-  const { blockId, floorNum, floorLabel, blockLabel, shortLine, leftX, rightX, topY, bottomY, rows, seatsPerRow } =
-    opts;
-  const rowPad = 8;
-  const usableTop = topY + rowPad;
-  const usableBottom = bottomY - rowPad;
-  const colGap = (rightX - leftX) / (seatsPerRow + 1);
-  const seats = [];
-  for (let r = 0; r < rows; r++) {
-    const t = rows === 1 ? 0.5 : r / (rows - 1);
-    const y = usableTop + (usableBottom - usableTop) * t;
-    const rowNum = r + 1;
-    for (let s = 0; s < seatsPerRow; s++) {
-      const x = leftX + colGap * (s + 1);
-      const seatNum = s + 1;
-      seats.push({
-        id: blockId + "-r" + rowNum + "-s" + seatNum,
-        kind: "seat",
-        cx: x,
-        cy: y,
-        r: 3.2,
-        label: floorLabel + " " + blockLabel + " " + rowNum + "열 " + seatNum + "번",
-        seatDefaults: {
-          floor: String(floorNum),
-          section: shortLine,
-          row: String(rowNum),
-          number: String(seatNum),
-        },
-      });
-    }
-  }
-  return seats;
-}
-
-// A(좌)/B(중앙)/C(우) 3개 구역이 간격을 두고 나뉘어 있는 층을 만든다.
-// 구역별로 줄 수(rows)와 계단식으로 깎이는 정도(taperRows)를 따로 지정할 수 있다.
-function threeBlockFloor(floorId, floorNum, floorLabel, topY, bottomY, a, b, c) {
-  const seatSpacing = 11;
-  const gap = 16;
-  const viewBoxWidth = 760;
-  const totalWidth = a.fullSeats * seatSpacing * 2 + b.halfFullSeats * 2 * seatSpacing + gap * 2;
-  const margin = (viewBoxWidth - totalWidth) / 2;
-
-  const aInnerX = margin + a.fullSeats * seatSpacing; // A 오른쪽(중앙 쪽) 끝
-  const bLeftFullX = aInnerX + gap;
-  const bRightFullX = bLeftFullX + b.halfFullSeats * 2 * seatSpacing;
-  const cInnerX = bRightFullX + gap;
-  const cOuterX = cInnerX + c.fullSeats * seatSpacing;
-  const centerX = (bLeftFullX + bRightFullX) / 2;
-
-  const seats = [
-    ...sideBlockSeats({
-      blockId: floorId + "-a",
-      floorNum,
-      floorLabel,
-      blockLabel: "A구역",
-      shortLine: "A",
-      anchorX: aInnerX,
-      direction: -1,
-      fullSeats: a.fullSeats,
-      taperRows: a.taperRows,
-      rows: a.rows,
-      seatSpacing,
-      topY,
-      bottomY,
-    }),
-    ...centerBlockSeats({
-      blockId: floorId + "-b",
-      floorNum,
-      floorLabel,
-      blockLabel: "B구역",
-      shortLine: "B",
-      centerX,
-      halfFullSeats: b.halfFullSeats,
-      minHalfSeats: b.minHalfSeats,
-      taperRows: b.taperRows,
-      rows: b.rows,
-      seatSpacing,
-      topY,
-      bottomY,
-    }),
-    ...sideBlockSeats({
-      blockId: floorId + "-c",
-      floorNum,
-      floorLabel,
-      blockLabel: "C구역",
-      shortLine: "C",
-      anchorX: cInnerX,
-      direction: 1,
-      fullSeats: c.fullSeats,
-      taperRows: c.taperRows,
-      rows: c.rows,
-      seatSpacing,
-      topY,
-      bottomY,
-    }),
-  ];
-
-  const blockLabels = [
-    { text: "A", x: (margin + aInnerX) / 2, y: topY - 10 },
-    { text: "B", x: centerX, y: topY - 10 },
-    { text: "C", x: (cInnerX + cOuterX) / 2, y: topY - 10 },
-  ];
-
-  return { seats, blockLabels, floorLabel, floorY: (topY + bottomY) / 2 };
-}
-
-// 무대 옆에 붙은 좁은 사이드 박스석(충무아트센터 1층 양옆 스카이박스 등).
-function theaterSideWing(id, floorNum, floorLabel, side, topY, bottomY) {
-  const isLeft = side === "left";
-  const leftX = isLeft ? 6 : 732;
-  const rightX = isLeft ? 28 : 754;
-  const seats = fixedGridSeats({
-    blockId: id,
-    floorNum,
-    floorLabel,
-    blockLabel: "사이드석",
-    shortLine: "S",
-    leftX,
-    rightX,
-    topY,
-    bottomY,
-    rows: 6,
-    seatsPerRow: 3,
   });
-  const blockLabels = [{ text: "S", x: (leftX + rightX) / 2, y: topY - 10 }];
-  return { seats, blockLabels, floorLabel, floorY: (topY + bottomY) / 2 };
+  return { seats, blockLabels: [{ text: shortLine, x, y: topY - 14 }] };
 }
 
 function mergeFloors(floors) {
   const sections = floors.flatMap((f) => f.seats);
   const blockLabels = floors.flatMap((f) => f.blockLabels);
+  const rowLabels = floors.flatMap((f) => f.rowLabels || []);
   const seenFloorLabels = new Set();
   const floorLabels = [];
   floors.forEach((f) => {
@@ -344,86 +143,267 @@ function mergeFloors(floors) {
     seenFloorLabels.add(f.floorLabel);
     floorLabels.push({ label: f.floorLabel, y: f.floorY });
   });
-  return { sections, blockLabels, floorLabels };
+  const viewBoxHeight = Math.max(...floors.map((f) => f.bottomY)) + 40;
+  return { sections, blockLabels, rowLabels, floorLabels, viewBoxHeight };
 }
 
-// image/블루스퀘어.jpg 실측(사용자 확인): A(좌)/B(중앙)/C(우) 3개 구역이 실제로 나뉘어 있고,
-// 가장 넓은 줄 기준 폭은 A≈9석, B≈16석, C≈9석으로 큰 타이퍼 없이 거의 일정하다.
-// 1층은 맨 앞 2줄만 아주 살짝(8→9석) 좁아지고 나머지는 그대로다. 2·3층은 같은 구조를 층 크기에 맞게 축소.
+// 옆 구역(A/C)용 한 줄: 중앙 쪽 변(anchorX)은 고정, 바깥쪽으로 count칸만큼 늘어난다.
+function realSideRow(blockId, floorNum, floorLabel, blockLabel, shortLine, anchorX, direction, y, rowNum, count) {
+  const seats = [];
+  for (let s = 0; s < count; s++) {
+    const seatNum = s + 1;
+    seats.push({
+      id: blockId + "-r" + rowNum + "-s" + seatNum,
+      kind: "seat",
+      cx: anchorX + direction * SEAT_SPACING * seatNum,
+      cy: y,
+      r: SEAT_RADIUS,
+      label: floorLabel + " " + blockLabel + " " + rowNum + "열 " + seatNum + "번",
+      seatDefaults: { floor: String(floorNum), section: shortLine, row: String(rowNum), number: String(seatNum) },
+    });
+  }
+  return seats;
+}
+
+// 가운데 구역용 한 줄: centerX를 기준으로 좌우 대칭 배치(홀수면 오른쪽에 한 석 더).
+function realCenterRow(blockId, floorNum, floorLabel, blockLabel, shortLine, centerX, y, rowNum, count) {
+  const half = Math.floor(count / 2);
+  const xs = [];
+  for (let k = 0; k < half; k++) {
+    const offset = SEAT_SPACING * (k + 0.5);
+    xs.push(centerX - offset);
+    xs.push(centerX + offset);
+  }
+  if (count % 2 === 1) {
+    xs.push(centerX + SEAT_SPACING * (half + 0.5));
+  }
+  xs.sort((a, b) => a - b);
+  return xs.map((x, i) => {
+    const seatNum = i + 1;
+    return {
+      id: blockId + "-r" + rowNum + "-s" + seatNum,
+      kind: "seat",
+      cx: x,
+      cy: y,
+      r: SEAT_RADIUS,
+      label: floorLabel + " " + blockLabel + " " + rowNum + "열 " + seatNum + "번",
+      seatDefaults: { floor: String(floorNum), section: shortLine, row: String(rowNum), number: String(seatNum) },
+    };
+  });
+}
+
+// seats/블루스퀘어_1_2_3.txt(뮤지컬씨야 실측 좌석 데이터, musicalseeya.com)에서 그대로 뽑아낸
+// 줄별 좌석 수 배열로 층을 만든다. 배열의 0은 통로(간격)를 뜻하며 좌석을 만들지 않는다.
+// topY는 이 층의 첫 줄 y좌표이며, 반환하는 bottomY로 다음 층의 topY를 이어붙인다.
+function realBlockFloor(floorId, floorNum, floorLabel, topY, aCounts, bCounts, cCounts) {
+  const gap = 25;
+  const viewBoxWidth = 760;
+  const aFull = Math.max(...aCounts);
+  const bFull = Math.max(...bCounts);
+  const cFull = Math.max(...cCounts);
+  const totalWidth = aFull * SEAT_SPACING + gap + bFull * SEAT_SPACING + gap + cFull * SEAT_SPACING;
+  const margin = (viewBoxWidth - totalWidth) / 2;
+
+  const aInnerX = margin + aFull * SEAT_SPACING;
+  const bLeftX = aInnerX + gap;
+  const bRightX = bLeftX + bFull * SEAT_SPACING;
+  const centerX = (bLeftX + bRightX) / 2;
+  const cInnerX = bRightX + gap;
+  const cOuterX = cInnerX + cFull * SEAT_SPACING;
+
+  function layout(counts, buildRow, collectLabels) {
+    const seats = [];
+    const rowLabels = [];
+    let rowNum = 0;
+    counts.forEach((count, idx) => {
+      const y = topY + idx * ROW_PITCH;
+      if (count > 0) {
+        rowNum += 1;
+        seats.push(...buildRow(y, rowNum, count));
+        if (collectLabels) rowLabels.push({ rowNum, y });
+      }
+    });
+    return { seats, rowLabels, bottomY: topY + (counts.length - 1) * ROW_PITCH };
+  }
+
+  const aResult = layout(
+    aCounts,
+    (y, rowNum, count) => realSideRow(floorId + "-a", floorNum, floorLabel, "A구역", "A", aInnerX, -1, y, rowNum, count),
+    true
+  );
+  const bResult = layout(bCounts, (y, rowNum, count) =>
+    realCenterRow(floorId + "-b", floorNum, floorLabel, "B구역", "B", centerX, y, rowNum, count)
+  );
+  const cResult = layout(
+    cCounts,
+    (y, rowNum, count) => realSideRow(floorId + "-c", floorNum, floorLabel, "C구역", "C", cInnerX, 1, y, rowNum, count),
+    true
+  );
+
+  const blockLabels = [
+    { text: "A", x: (margin + aInnerX) / 2, y: topY - 14 },
+    { text: "B", x: centerX, y: topY - 14 },
+    { text: "C", x: (cInnerX + cOuterX) / 2, y: topY - 14 },
+  ];
+  const rowLabels = [
+    ...aResult.rowLabels.map((rl) => ({ x: aInnerX + ROW_LABEL_GAP, y: rl.y, text: String(rl.rowNum) })),
+    ...cResult.rowLabels.map((rl) => ({ x: cInnerX - ROW_LABEL_GAP, y: rl.y, text: String(rl.rowNum) })),
+  ];
+
+  const bottomY = Math.max(aResult.bottomY, bResult.bottomY, cResult.bottomY);
+  return {
+    seats: [...aResult.seats, ...bResult.seats, ...cResult.seats],
+    blockLabels,
+    rowLabels,
+    floorLabel,
+    floorY: topY - 30,
+    topY,
+    bottomY,
+  };
+}
+
+// image/블루스퀘어.jpg + seats/블루스퀘어_1_2_3.txt(뮤지컬씨야 실측 데이터) 그대로:
+// 1층 A/C는 앞 7줄이 8→13석으로 계단식으로 넓어진 뒤 통로, 15석짜리 15줄, 통로, 마지막 8석(휠체어) 줄.
+// 1층 B는 타이퍼 없이 16~17석을 오가며 22줄 이어진다. 2·3층은 타이퍼 없이 거의 일정한 폭.
+// 층마다 실제 줄 수가 다르므로 세로 폭도 그만큼 다르게 나오고, 다음 층은 그 바로 아래에서 시작한다.
 function blueSquareMap() {
-  return mergeFloors([
-    threeBlockFloor(
-      "1f",
-      1,
-      "1층",
-      90,
-      330,
-      { rows: 23, taperRows: 2, fullSeats: 9 },
-      { rows: 23, taperRows: 0, halfFullSeats: 8 },
-      { rows: 23, taperRows: 2, fullSeats: 9 }
-    ),
-    threeBlockFloor(
-      "2f",
-      2,
-      "2층",
-      360,
-      540,
-      { rows: 10, taperRows: 0, fullSeats: 6 },
-      { rows: 10, taperRows: 0, halfFullSeats: 6 },
-      { rows: 10, taperRows: 0, fullSeats: 6 }
-    ),
-    threeBlockFloor(
-      "3f",
-      3,
-      "3층",
-      570,
-      720,
-      { rows: 6, taperRows: 0, fullSeats: 5 },
-      { rows: 6, taperRows: 0, halfFullSeats: 5 },
-      { rows: 6, taperRows: 0, fullSeats: 5 }
-    ),
-  ]);
+  const floor1 = realBlockFloor(
+    "1f",
+    1,
+    "1층",
+    90,
+    [8, 9, 10, 10, 11, 12, 13, 0, 0, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 0, 8],
+    [16, 17, 16, 17, 16, 17, 16, 0, 0, 16, 17, 16, 17, 16, 17, 16, 17, 16, 17, 16, 17, 16, 17, 16],
+    [8, 9, 10, 10, 11, 12, 13, 0, 0, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 0, 8]
+  );
+  const floor2 = realBlockFloor(
+    "2f",
+    2,
+    "2층",
+    floor1.bottomY + FLOOR_GAP,
+    [15, 15, 15, 15, 15, 13, 13, 13, 13, 15],
+    [16, 16, 16, 16, 16, 14, 13, 13, 13, 13],
+    [15, 15, 15, 15, 15, 13, 13, 13, 13, 15]
+  );
+  const floor3 = realBlockFloor(
+    "3f",
+    3,
+    "3층",
+    floor2.bottomY + FLOOR_GAP,
+    [15, 15, 12, 15, 15, 16],
+    [16, 16, 16, 16, 16, 14],
+    [15, 15, 12, 15, 15, 16]
+  );
+  return mergeFloors([floor1, floor2, floor3]);
 }
 
-// image/충무아트센터.jpg 실측: A/B/C가 실제로 벌어져 있고 구역별로 줄 수·테이퍼가 다르다.
-// 1층 - A: 16열(앞 3열 테이퍼, 7석 완성), B: 15열(앞 8열 긴 테이퍼, 8+8석 완성), C: 9열(앞 3열 테이퍼, 7석 완성, A보다 짧음)
-// 2층 - A/C: 6열(짧고 테이퍼 거의 없음), B: 11열(A/C보다 길게 이어짐)
-// 3층 - A/B/C 모두 8열, 완만한 테이퍼
+// seats/충무아트센터_1_2_3.txt(뮤지컬씨야 실측 데이터)에서 그대로 뽑아낸 줄별 좌석 수.
+// 블루스퀘어와 달리 A/B/C 구역 사이에 통로 칸이 별도 열로 있을 뿐, 각 구역 내부에는 통로(0)가 없다.
 function chungmuArtMap() {
-  return mergeFloors([
-    threeBlockFloor(
-      "1f",
-      1,
-      "1층",
-      90,
-      330,
-      { rows: 16, taperRows: 3, fullSeats: 7 },
-      { rows: 15, taperRows: 8, halfFullSeats: 8, minHalfSeats: 2 },
-      { rows: 9, taperRows: 3, fullSeats: 7 }
-    ),
-    theaterSideWing("1f-side-l", 1, "1층", "left", 90, 210),
-    theaterSideWing("1f-side-r", 1, "1층", "right", 90, 210),
-    threeBlockFloor(
-      "2f",
-      2,
-      "2층",
-      360,
-      540,
-      { rows: 6, taperRows: 1, fullSeats: 7 },
-      { rows: 11, taperRows: 7, halfFullSeats: 8, minHalfSeats: 1 },
-      { rows: 6, taperRows: 1, fullSeats: 7 }
-    ),
-    threeBlockFloor(
-      "3f",
-      3,
-      "3층",
-      570,
-      720,
-      { rows: 8, taperRows: 2, fullSeats: 7 },
-      { rows: 8, taperRows: 3, halfFullSeats: 8, minHalfSeats: 2 },
-      { rows: 8, taperRows: 2, fullSeats: 7 }
-    ),
-  ]);
+  const floor1 = realBlockFloor(
+    "1f",
+    1,
+    "1층",
+    90,
+    [7, 7, 7, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 6],
+    [17, 16, 17, 16, 17, 16, 17, 16, 17, 16, 17, 16, 17, 16, 17, 16, 17, 16, 17, 16],
+    [7, 7, 7, 8, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 7]
+  );
+  const floor2 = realBlockFloor(
+    "2f",
+    2,
+    "2층",
+    floor1.bottomY + FLOOR_GAP,
+    [9, 9, 9, 9, 9, 9, 8],
+    [16, 15, 16, 15, 16, 15, 16, 11, 11, 11, 8],
+    [9, 9, 9, 9, 9, 9, 6]
+  );
+  const floor3 = realBlockFloor(
+    "3f",
+    3,
+    "3층",
+    floor2.bottomY + FLOOR_GAP,
+    [9, 9, 9, 9, 9, 9, 9, 9],
+    [16, 15, 16, 15, 16, 15, 16, 15],
+    [9, 9, 9, 9, 9, 9, 9, 9]
+  );
+  return mergeFloors([floor1, floor2, floor3]);
+}
+
+// 두 옆 블록의 바깥쪽 가장자리(margin 안쪽 x좌표)를 realBlockFloor와 동일한 공식으로 미리 계산한다.
+// BL/BR 박스석을 메인 구역 바로 바깥에 붙이려면 margin 값이 필요한데 realBlockFloor는 그 값을 반환하지 않기 때문이다.
+function blockFloorMargin(aCounts, bCounts, cCounts) {
+  const gap = 25;
+  const aFull = Math.max(...aCounts);
+  const bFull = Math.max(...bCounts);
+  const cFull = Math.max(...cCounts);
+  const totalWidth = aFull * SEAT_SPACING + gap + bFull * SEAT_SPACING + gap + cFull * SEAT_SPACING;
+  return (760 - totalWidth) / 2;
+}
+
+const SUBTIER_GAP = 40; // 같은 층 안에서 단(OP석/메인/그랜드박스석 등)이 나뉠 때의 간격(층간 간격보다 좁게)
+
+// seats/LG아트센터_1_2_3.txt 실측: 1층은 무대에 가까운 순으로 OP석(오케스트라피트, 6열) → 메인(14~16열,
+// 양옆에 BL/BR 박스석) → 그랜드박스석(6~7열) 세 단이 이어진다. 2층은 메인 구역 양옆에 BL/BR이 붙고,
+// 3층은 별도 박스석 없이 A/B/C만 있다.
+function lgFloor1() {
+  const opTier = realBlockFloor(
+    "1f-op", 1, "1층", 90,
+    [0, 3, 4, 0, 4, 4], [16, 15, 16, 0, 17, 18], [0, 3, 4, 0, 4, 4]
+  );
+  opTier.blockLabels = opTier.blockLabels.map((b) => (b.text === "B" ? { ...b, text: "OP" } : b));
+
+  const mainTopY = opTier.bottomY + SUBTIER_GAP;
+  const mainACounts = [0, 4, 4, 5, 5, 5, 6, 6, 6, 6, 6, 5, 4, 2];
+  const mainBCounts = [19, 18, 19, 18, 17, 17, 17, 17, 19, 18, 19, 18, 19, 18, 17, 8];
+  const mainTier = realBlockFloor("1f-main", 1, "1층", mainTopY, mainACounts, mainBCounts, mainACounts);
+  const mainMargin = blockFloorMargin(mainACounts, mainBCounts, mainACounts);
+  const bl = wingColumn("1f-bl", 1, "1층", "BL", mainMargin - 24, mainTopY, [1, 1, 1, 1, 1, 1]);
+  const br = wingColumn("1f-br", 1, "1층", "BR", 760 - mainMargin + 24, mainTopY, [1, 1, 1, 1, 1, 1]);
+
+  const gTopY = mainTier.bottomY + SUBTIER_GAP;
+  const gTier = realBlockFloor(
+    "1f-g", 1, "1층", gTopY,
+    [9, 9, 9, 9, 9, 9, 8], [19, 18, 19, 18, 8, 6], [9, 9, 9, 9, 9, 9, 8]
+  );
+
+  return {
+    seats: [...opTier.seats, ...mainTier.seats, ...bl.seats, ...br.seats, ...gTier.seats],
+    blockLabels: [...opTier.blockLabels, ...mainTier.blockLabels, ...bl.blockLabels, ...br.blockLabels, ...gTier.blockLabels],
+    rowLabels: [...opTier.rowLabels, ...mainTier.rowLabels, ...gTier.rowLabels],
+    floorLabel: "1층",
+    floorY: opTier.floorY,
+    topY: opTier.topY,
+    bottomY: gTier.bottomY,
+  };
+}
+
+function lgFloor2(topY) {
+  const aCounts = [13, 12, 11, 10, 10, 9, 9, 9];
+  const bCounts = [15, 16, 17, 18, 19, 18, 19, 19];
+  const main = realBlockFloor("2f", 2, "2층", topY, aCounts, bCounts, aCounts);
+  const margin = blockFloorMargin(aCounts, bCounts, aCounts);
+  const bl = wingColumn("2f-bl", 2, "2층", "BL", margin - 24, topY, [1, 1, 1, 1]);
+  const br = wingColumn("2f-br", 2, "2층", "BR", 760 - margin + 24, topY, [1, 1, 1, 1]);
+  return {
+    seats: [...main.seats, ...bl.seats, ...br.seats],
+    blockLabels: [...main.blockLabels, ...bl.blockLabels, ...br.blockLabels],
+    rowLabels: main.rowLabels,
+    floorLabel: "2층",
+    floorY: main.floorY,
+    topY: main.topY,
+    bottomY: main.bottomY,
+  };
+}
+
+function lgArtsCenterMap() {
+  const floor1 = lgFloor1();
+  const floor2 = lgFloor2(floor1.bottomY + FLOOR_GAP);
+  const floor3 = realBlockFloor(
+    "3f", 3, "3층", floor2.bottomY + FLOOR_GAP,
+    [12, 11, 11, 10, 10, 9, 7], [15, 16, 17, 18, 19, 18, 19, 16], [12, 11, 11, 10, 10, 9, 7]
+  );
+  return mergeFloors([floor1, floor2, floor3]);
 }
 
 window.VENUES = [
@@ -443,22 +423,42 @@ window.VENUES = [
     id: "blue-square",
     name: "블루스퀘어 신한카드홀",
     category: "musical",
-    map: {
-      kind: "block",
-      viewBox: "0 0 760 760",
-      stage: { x: 260, y: 20, width: 240, height: 40 },
-      ...blueSquareMap(),
-    },
+    map: (() => {
+      const m = blueSquareMap();
+      return {
+        kind: "block",
+        viewBox: "0 0 760 " + m.viewBoxHeight,
+        stage: { x: 260, y: 20, width: 240, height: 40 },
+        ...m,
+      };
+    })(),
   },
   {
     id: "chungmu-art-center",
     name: "충무아트센터 대극장",
     category: "musical",
-    map: {
-      kind: "block",
-      viewBox: "0 0 760 760",
-      stage: { x: 260, y: 20, width: 240, height: 40 },
-      ...chungmuArtMap(),
-    },
+    map: (() => {
+      const m = chungmuArtMap();
+      return {
+        kind: "block",
+        viewBox: "0 0 760 " + m.viewBoxHeight,
+        stage: { x: 260, y: 20, width: 240, height: 40 },
+        ...m,
+      };
+    })(),
+  },
+  {
+    id: "lg-arts-center",
+    name: "LG아트센터 시그니처홀",
+    category: "musical",
+    map: (() => {
+      const m = lgArtsCenterMap();
+      return {
+        kind: "block",
+        viewBox: "0 0 760 " + m.viewBoxHeight,
+        stage: { x: 260, y: 20, width: 240, height: 40 },
+        ...m,
+      };
+    })(),
   },
 ];

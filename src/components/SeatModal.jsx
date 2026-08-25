@@ -195,8 +195,11 @@ window.SeatModal = function SeatModal({ venue, section, onClose, onSaved }) {
           <button
             type="submit"
             disabled={saving}
-            className="w-full rounded-lg text-white text-sm font-semibold py-2.5 disabled:opacity-50"
-            style={{ backgroundColor: window.BURGUNDY }}
+            className={
+              "w-full rounded-lg text-sm font-semibold py-2.5 disabled:opacity-50 " +
+              (venue.category === "musical" ? "text-neutral-900" : "text-white")
+            }
+            style={{ backgroundColor: window.categoryColor(venue.category) }}
           >
             {saving ? "저장 중..." : "기록하기"}
           </button>

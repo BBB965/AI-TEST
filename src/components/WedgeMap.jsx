@@ -151,7 +151,7 @@ window.WedgeMap = function WedgeMap({ venue, onSectionClick }) {
           );
 
           let fill = section.zone === "outfield" ? "#dcecdf" : "#e5e7eb";
-          if (conquered) fill = window.BURGUNDY;
+          if (conquered) fill = window.categoryColor(venue.category);
           else if (hoverId === section.id) fill = "#e7cdd3";
 
           return (
