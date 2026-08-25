@@ -4,15 +4,16 @@ function formatDate(d) {
   return d;
 }
 
-window.BlockMap = function BlockMap({ venue, onSectionClick }) {
+window.BlockMap = function BlockMap({ venue, onSectionClick, entriesFor }) {
   const { viewBox, sections, stage, blockLabels, rowLabels, floorLabels } = venue.map;
   const [hoverId, setHoverId] = React.useState(null);
   const [tooltip, setTooltip] = React.useState(null); // { section, entries, x, y }
   const containerRef = React.useRef(null);
+  const getSectionEntries = entriesFor || ((sectionId) => window.getEntries(venue.id, sectionId));
 
   function handleEnter(e, section) {
     setHoverId(section.id);
-    const entries = window.getEntries(venue.id, section.id);
+    const entries = getSectionEntries(section.id);
     const containerRect = containerRef.current.getBoundingClientRect();
     const targetRect = e.currentTarget.getBoundingClientRect();
     setTooltip({
@@ -105,7 +106,7 @@ window.BlockMap = function BlockMap({ venue, onSectionClick }) {
           ))}
 
         {sections.map((section) => {
-          const count = window.getEntries(venue.id, section.id).length;
+          const count = getSectionEntries(section.id).length;
           const conquered = count > 0;
           const hovered = hoverId === section.id;
           const accent = window.categoryColor(venue.category);

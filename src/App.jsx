@@ -6,6 +6,7 @@ window.App = function App() {
   const [selectedSection, setSelectedSection] = React.useState(null);
   const [version, setVersion] = React.useState(0);
   const [loadingEntries, setLoadingEntries] = React.useState(true);
+  const [showFilter, setShowFilter] = React.useState("all"); // "all" 또는 특정 공연/경기 title
 
   React.useEffect(() => {
     const stillValid = venues.some((v) => v.id === venueId);
@@ -14,6 +15,11 @@ window.App = function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category]);
+
+  // venue를 바꾸면 이전 venue 기준으로 골라뒀던 필터는 의미가 없으므로 초기화한다.
+  React.useEffect(() => {
+    setShowFilter("all");
+  }, [venueId]);
 
   // 모든 기록을 앱이 뜰 때 한 번만 불러온다. venue를 바꿀 때마다 다시 불러오면
   // 그때마다 네트워크 왕복이 생겨 탭을 옮길 때마다 버퍼링처럼 느껴지기 때문이다.
@@ -33,6 +39,24 @@ window.App = function App() {
   const conqueredCount = venue
     ? venue.map.sections.filter((s) => window.isConquered(venue.id, s.id)).length
     : 0;
+
+  // 이 venue에서 지금까지 기록한 모든 항목(공연/경기 title별로 묶어 필터링·집계하는 데 쓴다).
+  const venueEntries = venue ? window.getVenueEntries(venue.id) : [];
+  const showTitles = Array.from(new Set(venueEntries.map((e) => e.title).filter(Boolean))).sort();
+
+  // showFilter가 "all"이 아니면 그 title과 일치하는 기록만 남긴다.
+  // WedgeMap/BlockMap에도 그대로 넘겨서 지도 색칠·툴팁이 필터에 맞춰 바뀌게 한다.
+  function filteredEntriesFor(sectionId) {
+    const entries = window.getEntries(venue.id, sectionId);
+    if (showFilter === "all") return entries;
+    return entries.filter((e) => e.title === showFilter);
+  }
+
+  const filteredVenueEntries =
+    showFilter === "all" ? venueEntries : venueEntries.filter((e) => e.title === showFilter);
+  const filteredVisitCount = filteredVenueEntries.length;
+  const filteredSeatCount = new Set(filteredVenueEntries.map((e) => e.sectionId)).size;
+  const showInfo = showFilter !== "all" ? window.findShowInfo(showFilter) : null;
 
   function handleCategorySelect(id) {
     setCategory(id);
@@ -90,17 +114,46 @@ window.App = function App() {
                     } 완료`}
               </span>
             </div>
+
+            {!loadingEntries && showTitles.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                <select
+                  value={showFilter}
+                  onChange={(e) => setShowFilter(e.target.value)}
+                  className="text-xs border border-neutral-200 rounded-lg px-2 py-1.5 text-neutral-600 outline-none focus:border-neutral-400 bg-white max-w-[60%]"
+                >
+                  <option value="all">전체 보기</option>
+                  {showTitles.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                {showFilter !== "all" && (
+                  <span className="text-xs text-neutral-500">
+                    관람 {filteredVisitCount}회
+                    {showInfo && showInfo.totalRounds ? ` / 총 ${showInfo.totalRounds}회` : ""}
+                    {" · "}
+                    {venue.map.kind === "wedge" ? "구역" : "좌석"} {filteredSeatCount}
+                    {venue.map.kind === "wedge" ? "곳" : "석"}
+                  </span>
+                )}
+              </div>
+            )}
+
             {venue.map.kind === "wedge" ? (
               <window.WedgeMap
                 key={venue.id + "-" + version}
                 venue={venue}
                 onSectionClick={handleSectionClick}
+                entriesFor={filteredEntriesFor}
               />
             ) : (
               <window.BlockMap
                 key={venue.id + "-" + version}
                 venue={venue}
                 onSectionClick={handleSectionClick}
+                entriesFor={filteredEntriesFor}
               />
             )}
           </div>

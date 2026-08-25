@@ -60,6 +60,17 @@ window.getEntries = function getEntries(venueId, sectionId) {
   return (cache[venueId] && cache[venueId][sectionId]) || [];
 };
 
+// 한 venue의 모든 구역/좌석 기록을 하나의 배열로 펼쳐서 돌려준다.
+// 공연(제목)별로 묶어서 관람 횟수·좌석 수를 셀 때 쓴다.
+window.getVenueEntries = function getVenueEntries(venueId) {
+  const bySection = cache[venueId] || {};
+  const all = [];
+  Object.keys(bySection).forEach((sectionId) => {
+    bySection[sectionId].forEach((entry) => all.push({ ...entry, sectionId }));
+  });
+  return all;
+};
+
 window.addEntry = async function addEntry(venueId, sectionId, entry) {
   const client = getClient();
   if (!client) throw new Error("Supabase 설정이 안 됐어요. src/data/supabaseConfig.js를 확인해주세요.");

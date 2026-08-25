@@ -93,15 +93,16 @@ function formatDate(d) {
   return d;
 }
 
-window.WedgeMap = function WedgeMap({ venue, onSectionClick }) {
+window.WedgeMap = function WedgeMap({ venue, onSectionClick, entriesFor }) {
   const { viewBox, center, sections, screen } = venue.map;
   const [hoverId, setHoverId] = React.useState(null);
   const [tooltip, setTooltip] = React.useState(null); // { section, entries, x, y }
   const containerRef = React.useRef(null);
+  const getSectionEntries = entriesFor || ((sectionId) => window.getEntries(venue.id, sectionId));
 
   function handleEnter(e, section) {
     setHoverId(section.id);
-    const entries = window.getEntries(venue.id, section.id);
+    const entries = getSectionEntries(section.id);
     if (entries.length === 0) {
       setTooltip(null);
       return;
@@ -141,7 +142,7 @@ window.WedgeMap = function WedgeMap({ venue, onSectionClick }) {
             section.endAngle,
             section.zone
           );
-          const count = window.getEntries(venue.id, section.id).length;
+          const count = getSectionEntries(section.id).length;
           const conquered = count > 0;
           const mid = polarPoint(
             center.cx,
