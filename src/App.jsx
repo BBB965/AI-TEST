@@ -15,11 +15,11 @@ window.App = function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category]);
 
+  // 모든 기록을 앱이 뜰 때 한 번만 불러온다. venue를 바꿀 때마다 다시 불러오면
+  // 그때마다 네트워크 왕복이 생겨 탭을 옮길 때마다 버퍼링처럼 느껴지기 때문이다.
   React.useEffect(() => {
-    if (!venueId) return;
     let cancelled = false;
-    setLoadingEntries(true);
-    window.loadVenueEntries(venueId).then(() => {
+    window.loadAllEntries().then(() => {
       if (cancelled) return;
       setLoadingEntries(false);
       setVersion((v) => v + 1);
@@ -27,7 +27,7 @@ window.App = function App() {
     return () => {
       cancelled = true;
     };
-  }, [venueId]);
+  }, []);
 
   const venue = venues.find((v) => v.id === venueId) || null;
   const conqueredCount = venue

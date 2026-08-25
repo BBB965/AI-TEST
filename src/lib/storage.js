@@ -1,6 +1,7 @@
 // Supabase(Postgres) 기반 저장소. 구역(section)별로 여러 개의 기록(entry)을 담는다.
-// getEntries()는 매번 네트워크를 타지 않도록, venue 단위로 미리 불러온 캐시에서 동기적으로 읽는다.
-// 화면 전환 시(App.jsx) window.loadVenueEntries(venueId)로 캐시를 채운 뒤 다시 그리면 된다.
+// getEntries()는 매번 네트워크를 타지 않도록, 앱 시작 시 한 번에 불러온 캐시에서 동기적으로 읽는다.
+// (뮤지컬/야구/농구·구장을 옮길 때마다 다시 불러오면 매번 버퍼링이 생기므로, App.jsx는 window.loadAllEntries()를
+// 최초 1회만 호출한다. addEntry/deleteEntry는 캐시를 그 자리에서 갱신하므로 이후 재조회가 필요 없다.)
 window.SUPABASE_TABLE = "seat_entries";
 
 let supabaseClient = null;
@@ -33,29 +34,26 @@ function rowToEntry(row) {
   };
 }
 
-// venue 하나에 속한 모든 기록을 한 번에 불러와 캐시에 채운다. venue를 바꿀 때마다 호출한다.
-window.loadVenueEntries = async function loadVenueEntries(venueId) {
+// 모든 venue의 기록을 한 번에 불러와 캐시에 채운다. 앱이 처음 뜰 때 딱 한 번만 호출하면 된다.
+window.loadAllEntries = async function loadAllEntries() {
   const client = getClient();
-  if (!client) {
-    cache[venueId] = cache[venueId] || {};
-    return;
-  }
+  if (!client) return;
   const { data, error } = await client
     .from(window.SUPABASE_TABLE)
     .select("*")
-    .eq("venue_id", venueId)
     .order("created_at", { ascending: true });
   if (error) {
-    console.error("[supabase] loadVenueEntries 실패:", error);
-    cache[venueId] = cache[venueId] || {};
+    console.error("[supabase] loadAllEntries 실패:", error);
     return;
   }
-  const bySection = {};
+  const byVenue = {};
   (data || []).forEach((row) => {
-    if (!bySection[row.section_id]) bySection[row.section_id] = [];
-    bySection[row.section_id].push(rowToEntry(row));
+    if (!byVenue[row.venue_id]) byVenue[row.venue_id] = {};
+    if (!byVenue[row.venue_id][row.section_id]) byVenue[row.venue_id][row.section_id] = [];
+    byVenue[row.venue_id][row.section_id].push(rowToEntry(row));
   });
-  cache[venueId] = bySection;
+  Object.keys(cache).forEach((k) => delete cache[k]);
+  Object.assign(cache, byVenue);
 };
 
 window.getEntries = function getEntries(venueId, sectionId) {
