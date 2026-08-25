@@ -68,7 +68,7 @@ window.BlockMap = function BlockMap({ venue, onSectionClick }) {
               textAnchor="start"
               dominantBaseline="middle"
               className="pointer-events-none text-[19px] font-extrabold"
-              fill={window.categoryColor(venue.category)}
+              fill="#111827"
             >
               {f.label}
             </text>
