@@ -104,23 +104,12 @@ window.App = function App() {
 
         {venue && (
           <div className="mt-6 bg-white rounded-2xl shadow-sm border border-neutral-200 p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold">{venue.name}</h2>
-              <span className="text-xs text-neutral-400">
-                {loadingEntries
-                  ? "불러오는 중..."
-                  : `${conqueredCount} / ${venue.map.sections.length} ${
-                      venue.map.kind === "wedge" ? "구역" : "좌석"
-                    } 완료`}
-              </span>
-            </div>
-
-            {!loadingEntries && showTitles.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2 mb-4">
+            <div className="flex items-center justify-between mb-4 gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 <select
                   value={showFilter}
                   onChange={(e) => setShowFilter(e.target.value)}
-                  className="text-xs border border-neutral-200 rounded-lg px-2 py-1.5 text-neutral-600 outline-none focus:border-neutral-400 bg-white max-w-[60%]"
+                  className="text-xs border border-neutral-200 rounded-lg px-2 py-1.5 text-neutral-600 outline-none focus:border-neutral-400 bg-white shrink-0"
                 >
                   <option value="all">전체 보기</option>
                   {showTitles.map((t) => (
@@ -129,8 +118,8 @@ window.App = function App() {
                     </option>
                   ))}
                 </select>
-                {showFilter !== "all" && (
-                  <span className="text-xs text-neutral-500">
+                {!loadingEntries && showFilter !== "all" && (
+                  <span className="text-xs text-neutral-500 whitespace-nowrap overflow-hidden text-ellipsis min-w-0">
                     관람 {filteredVisitCount}회
                     {showInfo && showInfo.totalRounds ? ` / 총 ${showInfo.totalRounds}회` : ""}
                     {" · "}
@@ -139,7 +128,14 @@ window.App = function App() {
                   </span>
                 )}
               </div>
-            )}
+              <span className="text-xs text-neutral-400 whitespace-nowrap shrink-0">
+                {loadingEntries
+                  ? "불러오는 중..."
+                  : `${conqueredCount} / ${venue.map.sections.length} ${
+                      venue.map.kind === "wedge" ? "구역" : "좌석"
+                    } 완료`}
+              </span>
+            </div>
 
             {venue.map.kind === "wedge" ? (
               <window.WedgeMap
