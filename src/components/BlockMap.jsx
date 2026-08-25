@@ -109,7 +109,7 @@ window.BlockMap = function BlockMap({ venue, onSectionClick }) {
           const conquered = count > 0;
           const hovered = hoverId === section.id;
           const accent = window.categoryColor(venue.category);
-          let fill = "#c7cad1";
+          let fill = "none";
           let fillOpacity = 1;
           if (conquered) {
             fill = window.seatColorForCount(venue.category, count);
@@ -117,18 +117,23 @@ window.BlockMap = function BlockMap({ venue, onSectionClick }) {
             fill = accent;
             fillOpacity = 0.45;
           }
+          const size = (hovered || conquered ? section.r + 0.8 : section.r) * 2;
 
           return (
-            <circle
+            <rect
               key={section.id}
-              cx={section.cx}
-              cy={section.cy}
-              r={hovered || conquered ? section.r + 0.8 : section.r}
+              x={section.cx - size / 2}
+              y={section.cy - size / 2}
+              width={size}
+              height={size}
               onClick={() => onSectionClick(section)}
               onMouseEnter={(e) => handleEnter(e, section)}
               onMouseLeave={handleLeave}
               fill={fill}
               fillOpacity={fillOpacity}
+              stroke="#9ca3af"
+              strokeWidth="1"
+              style={{ pointerEvents: "all" }}
               className="cursor-pointer transition-all duration-100"
             />
           );
