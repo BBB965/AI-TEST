@@ -31,6 +31,7 @@ function rowToEntry(row) {
     seatLabel: row.seat_label || "",
     review: row.review || "",
     photo: row.photo || null,
+    meta: row.meta || null,
   };
 }
 
@@ -85,6 +86,7 @@ window.addEntry = async function addEntry(venueId, sectionId, entry) {
       seat_label: entry.seatLabel,
       review: entry.review,
       photo: entry.photo,
+      meta: entry.meta || null,
     })
     .select()
     .single();

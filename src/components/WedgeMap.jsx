@@ -249,6 +249,11 @@ window.WedgeMap = function WedgeMap({ venue, onSectionClick, entriesFor }) {
                     {formatDate(entry.date)}
                     {entry.seatLabel ? " · " + entry.seatLabel : ""}
                   </p>
+                  {window.formatEntryMeta(venue.category, entry.meta) && (
+                    <p className="text-[10px] text-neutral-400">
+                      {window.formatEntryMeta(venue.category, entry.meta)}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}

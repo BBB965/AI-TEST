@@ -58,6 +58,32 @@ window.readableTextColor = function readableTextColor(hex) {
   return luminance > 0.6 ? "#1f2937" : "#ffffff";
 };
 
+// 17시 이전 시작이면 낮공, 그 이후면 밤공으로 본다.
+window.isMatineeTime = function isMatineeTime(startTime) {
+  if (!startTime) return null;
+  const hour = parseInt(startTime.split(":")[0], 10);
+  return hour < 17;
+};
+
+// 경기/공연의 부가 정보(meta: 시즌·승패·시작 시간 또는 공연 차수·시작 시간)를
+// 한 줄로 요약한다. 기록 리스트·툴팁에서 공통으로 쓴다.
+window.formatEntryMeta = function formatEntryMeta(category, meta) {
+  if (!meta) return "";
+  const parts = [];
+  if (category === "musical") {
+    if (meta.production) parts.push(meta.production);
+    if (meta.startTime) {
+      const matinee = window.isMatineeTime(meta.startTime);
+      parts.push((matinee ? "낮공 " : "밤공 ") + meta.startTime);
+    }
+  } else {
+    if (meta.season) parts.push(meta.season + " 시즌");
+    if (meta.startTime) parts.push(meta.startTime);
+    if (meta.result) parts.push(meta.result);
+  }
+  return parts.join(" · ");
+};
+
 function rangeNums(from, to) {
   const arr = [];
   for (let n = from; n <= to; n++) arr.push(n);

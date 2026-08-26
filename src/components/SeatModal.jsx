@@ -31,6 +31,8 @@ function buildSeatLabel(seat) {
   return parts.join(" ");
 }
 
+const isSportsCategory = (category) => category === "baseball" || category === "basketball";
+
 window.SeatModal = function SeatModal({ venue, section, onClose, onSaved }) {
   const [entries, setEntries] = React.useState(() => window.getEntries(venue.id, section.id));
   const [title, setTitle] = React.useState("");
@@ -43,6 +45,11 @@ window.SeatModal = function SeatModal({ venue, section, onClose, onSaved }) {
   const [photo, setPhoto] = React.useState(null);
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState("");
+  // 야구/농구: 시즌·승패·경기 시작 시간. 뮤지컬: 공연 차수(재연/삼연 등)·시작 시간(낮공/밤공 구분용).
+  const [season, setSeason] = React.useState("");
+  const [result, setResult] = React.useState("");
+  const [production, setProduction] = React.useState("");
+  const [startTime, setStartTime] = React.useState("");
 
   async function handlePhotoChange(e) {
     const file = e.target.files && e.target.files[0];
@@ -70,6 +77,9 @@ window.SeatModal = function SeatModal({ venue, section, onClose, onSaved }) {
         row: seatRow.trim(),
         number: seatNumber.trim(),
       };
+      const meta = isSportsCategory(venue.category)
+        ? { season: season.trim(), result, startTime }
+        : { production: production.trim(), startTime };
       const updated = await window.addEntry(venue.id, section.id, {
         title: title.trim(),
         date,
@@ -77,6 +87,7 @@ window.SeatModal = function SeatModal({ venue, section, onClose, onSaved }) {
         seatLabel: buildSeatLabel(seat),
         review: review.trim(),
         photo,
+        meta,
       });
       setEntries(updated);
       setTitle("");
@@ -87,6 +98,10 @@ window.SeatModal = function SeatModal({ venue, section, onClose, onSaved }) {
       setSeatNumber(defaultSeatNumber(section));
       setReview("");
       setPhoto(null);
+      setSeason("");
+      setResult("");
+      setProduction("");
+      setStartTime("");
       onSaved();
     } catch (err) {
       setError((err && err.message) || "저장에 실패했어요. 사진 용량을 줄여서 다시 시도해보세요.");
@@ -148,6 +163,62 @@ window.SeatModal = function SeatModal({ venue, section, onClose, onSaved }) {
               className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-400"
             />
           </div>
+          {isSportsCategory(venue.category) ? (
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-xs font-medium text-neutral-500 mb-1">시즌</label>
+                <input
+                  value={season}
+                  onChange={(e) => setSeason(e.target.value)}
+                  placeholder="예: 2026"
+                  className="w-full rounded-lg border border-neutral-200 px-2 py-2 text-sm text-center outline-none focus:border-neutral-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-neutral-500 mb-1">경기 시작</label>
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="w-full rounded-lg border border-neutral-200 px-2 py-2 text-sm text-center outline-none focus:border-neutral-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-neutral-500 mb-1">승패</label>
+                <select
+                  value={result}
+                  onChange={(e) => setResult(e.target.value)}
+                  className="w-full rounded-lg border border-neutral-200 px-2 py-2 text-sm text-center outline-none focus:border-neutral-400 bg-white"
+                >
+                  <option value="">선택</option>
+                  <option value="승">승</option>
+                  <option value="패">패</option>
+                  <option value="무">무</option>
+                </select>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-medium text-neutral-500 mb-1">공연 차수</label>
+                <input
+                  value={production}
+                  onChange={(e) => setProduction(e.target.value)}
+                  placeholder="예: 재연, 삼연"
+                  className="w-full rounded-lg border border-neutral-200 px-2 py-2 text-sm text-center outline-none focus:border-neutral-400"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-neutral-500 mb-1">공연 시작 (낮공/밤공 구분)</label>
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="w-full rounded-lg border border-neutral-200 px-2 py-2 text-sm text-center outline-none focus:border-neutral-400"
+                />
+              </div>
+            </div>
+          )}
           <div>
             <label className="block text-xs font-medium text-neutral-500 mb-1">좌석 상세</label>
             <div className="grid grid-cols-4 gap-2">
@@ -223,6 +294,11 @@ window.SeatModal = function SeatModal({ venue, section, onClose, onSaved }) {
                     {entry.date}
                     {entry.seatLabel ? " · " + entry.seatLabel : ""}
                   </p>
+                  {window.formatEntryMeta(venue.category, entry.meta) && (
+                    <p className="text-xs text-neutral-400">
+                      {window.formatEntryMeta(venue.category, entry.meta)}
+                    </p>
+                  )}
                   {entry.review && <p className="text-xs text-neutral-600 mt-1">{entry.review}</p>}
                 </div>
                 <button
