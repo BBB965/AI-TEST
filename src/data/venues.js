@@ -91,11 +91,13 @@ function rangeNums(from, to) {
 }
 
 // numbers 배열을 startAngle~endAngle 사이에 균등하게 나눠 구역으로 만든다 (야구장 wedge용).
+// tier(1xx/2xx/3xx/4xx)는 WedgeMap에서 미정복 구역을 층별로 다른 색으로 칠하는 데 쓴다.
 function numberedRing(zone, numbers, startAngle, endAngle, innerRadius, outerRadius) {
   const step = (endAngle - startAngle) / numbers.length;
   return numbers.map((num, i) => ({
     id: "sec-" + num,
     zone,
+    tier: Math.floor(num / 100),
     label: num + "구역",
     shortLines: [String(num)],
     startAngle: startAngle + step * i,
@@ -105,6 +107,16 @@ function numberedRing(zone, numbers, startAngle, endAngle, innerRadius, outerRad
   }));
 }
 
+// WedgeMap에서 미정복 구역을 칠할 층별 파스텔 색. 실제 좌석표처럼 층마다 다른 색을 써서
+// 한눈에 층 구분이 되고 밋밋한 회색 일색보다 화사해 보이게 한다.
+window.WEDGE_TIER_COLORS = {
+  0: "#ddd6fe", // 박스석/테라존 - 연보라
+  1: "#fecaca", // 100번대 - 연빨강
+  2: "#fed7aa", // 200번대 - 연주황
+  3: "#bfdbfe", // 300번대 - 연파랑
+  4: "#bbf7d0", // 400번대(외야) - 연초록
+};
+
 function gocheokSections() {
   return [
     // 내야: 홈플레이트 바로 아래부터 시작해서 아래로 갈수록 층이 높아진다 (박스석 -> 100 -> 200 -> 300 -> 400).
@@ -112,6 +124,7 @@ function gocheokSections() {
     {
       id: "box-away",
       zone: "infield",
+      tier: 0,
       label: "원정 다이아몬드 박스석",
       shortLines: ["원정", "박스석"],
       startAngle: -40,
@@ -122,6 +135,7 @@ function gocheokSections() {
     {
       id: "box-home",
       zone: "infield",
+      tier: 0,
       label: "홈 다이아몬드 박스석",
       shortLines: ["홈", "박스석"],
       startAngle: 0,
@@ -178,6 +192,7 @@ function jamsilOldSections() {
     {
       id: "terrazone",
       zone: "infield",
+      tier: 0,
       label: "테라존 (프리미엄석)",
       shortLines: ["테라존"],
       startAngle: -14,
