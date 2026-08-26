@@ -93,6 +93,17 @@ function formatDate(d) {
   return d;
 }
 
+// 실측 폴리곤(section.points)이 있으면 그 좌표를 그대로 SVG path로 잇는다.
+function pointsPath(points) {
+  return "M " + points.map((p) => p[0] + "," + p[1]).join(" L ") + " Z";
+}
+
+function polygonCentroid(points) {
+  const x = points.reduce((sum, p) => sum + p[0], 0) / points.length;
+  const y = points.reduce((sum, p) => sum + p[1], 0) / points.length;
+  return { x, y };
+}
+
 window.WedgeMap = function WedgeMap({ venue, onSectionClick, entriesFor }) {
   const { viewBox, center, sections, screen, backgroundImage, eraseRects } = venue.map;
   const [hoverId, setHoverId] = React.useState(null);
@@ -148,24 +159,28 @@ window.WedgeMap = function WedgeMap({ venue, onSectionClick, entriesFor }) {
           ))}
 
         {sections.map((section) => {
-          const d = wedgePath(
-            center.cx,
-            center.cy,
-            section.innerRadius,
-            section.outerRadius,
-            section.startAngle,
-            section.endAngle,
-            section.zone
-          );
+          const d = section.points
+            ? pointsPath(section.points)
+            : wedgePath(
+                center.cx,
+                center.cy,
+                section.innerRadius,
+                section.outerRadius,
+                section.startAngle,
+                section.endAngle,
+                section.zone
+              );
           const count = getSectionEntries(section.id).length;
           const conquered = count > 0;
-          const mid = polarPoint(
-            center.cx,
-            center.cy,
-            (section.innerRadius + section.outerRadius) / 2,
-            (section.startAngle + section.endAngle) / 2,
-            section.zone
-          );
+          const mid = section.points
+            ? polygonCentroid(section.points)
+            : polarPoint(
+                center.cx,
+                center.cy,
+                (section.innerRadius + section.outerRadius) / 2,
+                (section.startAngle + section.endAngle) / 2,
+                section.zone
+              );
 
           const accent = window.categoryColor(venue.category);
           let fill;
