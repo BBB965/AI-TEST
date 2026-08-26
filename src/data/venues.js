@@ -187,31 +187,38 @@ function gocheokSections() {
 // 이 두 식은 angle이 ±90도를 넘어가면 부호가 뒤집혀 반대쪽 절반으로 넘어가버린다. 그래서 내야(300번대)와
 // 외야(400번대) 링은 반드시 ±90도 "이내"로 끝나야 겹치지 않고, 정확히 ±90도에서 끝나야 그 지점(y=cy)에서
 // 내야 쪽과 외야 쪽이 이가 맞물리듯 이어져 하나의 완전한 원처럼 보인다.
-function jamsilOldSections() {
+// image/잠실야구장.svg(실제 좌석표) 위에 좌표를 겹쳐 칠하는 방식으로 만든 잠실야구장 구역.
+// 이 svg 하나를 배경 이미지로 그대로 쓰고(그라운드·게이트·번호가 이미 그려져 있다), 우리는 그
+// 위에 투명한 클릭 영역만 얹어서 방문 기록이 있을 때만 우리 색을 "덧입힌다".
+// 좌표는 svg의 viewBox(0 0 2069.29 1675) 안에서 홈플레이트(875,980)를 중심으로 실측했다.
+// zone은 전부 "infield" 공식(x=cx+r·sin, y=cy+r·cos) 하나만 쓰고 각도만 링마다 다르게 줘서
+// 100~400번대가 90도를 넘어가도 뒤집히지 않고 하나로 이어진 말굽 모양이 되게 한다.
+// 100/200/300번대는 홈(+각도) 쪽 낮은 번호에서 원정(-각도) 쪽 높은 번호로 이어지고, 400번대는
+// 전광판 자리를 사이에 두고 홈 쪽 401~411, 원정 쪽 412~422로 갈라진다.
+function jamsilRealSections() {
   return [
     {
-      id: "terrazone",
+      id: "center-seat",
       zone: "infield",
       tier: 0,
-      label: "테라존 (프리미엄석)",
-      shortLines: ["테라존"],
+      label: "중앙석 (프리미엄석)",
+      shortLines: ["중앙석"],
       startAngle: -14,
       endAngle: 14,
-      innerRadius: 55,
-      outerRadius: 85,
+      innerRadius: 150,
+      outerRadius: 230,
     },
 
-    // 100번대(그라운드에서 가장 가까운 1층 박스석)
-    ...numberedRing("infield", rangeNums(101, 122).reverse(), -68, 68, 85, 160),
+    // 100/200/300번대는 실측 결과 셋 다 같은 코너 각도(약 ±119도, 101·201·301이 한 방사선에 겹친다)에서
+    // 시작해 반지름만 다르므로 세 링 모두 같은 각도 범위(±120도)를 쓴다.
+    // 반지름은 이 svg의 실제 크기(홈플레이트~101 라벨 약 600, ~201 약 670, ~301 약 750)에 맞춘 값이다.
+    ...numberedRing("infield", rangeNums(101, 122).reverse(), -120, 120, 567, 637),
+    ...numberedRing("infield", rangeNums(201, 226).reverse(), -120, 120, 637, 713),
+    ...numberedRing("infield", rangeNums(301, 334).reverse(), -120, 120, 713, 793),
 
-    // 200번대
-    ...numberedRing("infield", rangeNums(201, 226).reverse(), -78, 78, 160, 240),
-
-    // 300번대(가장 바깥 내야 링, 정확히 ±90도까지 이어져 외야 링과 옆에서 맞물린다)
-    ...numberedRing("infield", rangeNums(301, 334).reverse(), -90, 90, 240, 345),
-
-    // 400번대(외야, 300번대와 정확히 같은 반지름·각도에서 이어받아 한 바퀴 완성한다)
-    ...numberedRing("outfield", rangeNums(401, 422).reverse(), -90, 90, 345, 420),
+    // 400번대(외야, 전광판 좌우로 갈라진 두 아치. 300번대가 끝나는 120도부터 이어받는다)
+    ...numberedRing("infield", rangeNums(401, 411), 120, 170, 793, 870),
+    ...numberedRing("infield", rangeNums(412, 422), -170, -120, 793, 870),
   ];
 }
 
@@ -541,10 +548,11 @@ window.VENUES = [
     category: "baseball",
     map: {
       kind: "wedge",
-      viewBox: "0 0 1100 980",
-      center: { cx: 550, cy: 500 },
-      screen: { zone: "outfield", startAngle: -8, endAngle: 8, innerRadius: 425, outerRadius: 455 },
-      sections: jamsilOldSections(),
+      viewBox: "0 0 2069.29 1675",
+      backgroundImage: "image/잠실야구장.svg",
+      eraseRects: [{ x: 1630, y: 14, width: 425, height: 525 }], // 우측 상단 좌석 등급 범례 가리기
+      center: { cx: 875, cy: 980 },
+      sections: jamsilRealSections(),
     },
   },
   {

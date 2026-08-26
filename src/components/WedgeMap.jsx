@@ -94,7 +94,7 @@ function formatDate(d) {
 }
 
 window.WedgeMap = function WedgeMap({ venue, onSectionClick, entriesFor }) {
-  const { viewBox, center, sections, screen } = venue.map;
+  const { viewBox, center, sections, screen, backgroundImage, eraseRects } = venue.map;
   const [hoverId, setHoverId] = React.useState(null);
   const [tooltip, setTooltip] = React.useState(null); // { section, entries, x, y }
   const containerRef = React.useRef(null);
@@ -130,7 +130,22 @@ window.WedgeMap = function WedgeMap({ venue, onSectionClick, entriesFor }) {
         role="img"
         aria-label={venue.name + " 구역도"}
       >
-        <Field cx={center.cx} cy={center.cy} />
+        {backgroundImage ? (
+          <image
+            href={backgroundImage}
+            x="0"
+            y="0"
+            width={viewBox.split(" ")[2]}
+            height={viewBox.split(" ")[3]}
+            preserveAspectRatio="none"
+          />
+        ) : (
+          <Field cx={center.cx} cy={center.cy} />
+        )}
+        {eraseRects &&
+          eraseRects.map((r, i) => (
+            <rect key={i} x={r.x} y={r.y} width={r.width} height={r.height} fill="#edeff3" />
+          ))}
 
         {sections.map((section) => {
           const d = wedgePath(
@@ -152,11 +167,28 @@ window.WedgeMap = function WedgeMap({ venue, onSectionClick, entriesFor }) {
             section.zone
           );
 
-          let fill =
-            window.WEDGE_TIER_COLORS[section.tier] ||
-            (section.zone === "outfield" ? "#dcecdf" : "#e5e7eb");
-          if (conquered) fill = window.seatColorForCount(venue.category, count);
-          else if (hoverId === section.id) fill = "#e7cdd3";
+          const accent = window.categoryColor(venue.category);
+          let fill;
+          let fillOpacity = 1;
+          let stroke = "#ffffff";
+          if (backgroundImage) {
+            // 배경이 실제 좌석표 이미지이므로 미정복 상태는 투명하게 두어 원본 그림이 그대로 보이게 하고,
+            // 방문 기록이 있을 때만 우리 색을 그 위에 "덧입힌다".
+            fill = "none";
+            stroke = "none";
+            if (conquered) {
+              fill = window.seatColorForCount(venue.category, count);
+              fillOpacity = 0.72;
+              stroke = "#ffffff";
+            } else if (hoverId === section.id) {
+              fill = accent;
+              fillOpacity = 0.32;
+            }
+          } else {
+            fill = window.WEDGE_TIER_COLORS[section.tier] || (section.zone === "outfield" ? "#dcecdf" : "#e5e7eb");
+            if (conquered) fill = window.seatColorForCount(venue.category, count);
+            else if (hoverId === section.id) fill = "#e7cdd3";
+          }
 
           return (
             <g key={section.id}>
@@ -166,31 +198,35 @@ window.WedgeMap = function WedgeMap({ venue, onSectionClick, entriesFor }) {
                 onMouseEnter={(e) => handleEnter(e, section)}
                 onMouseLeave={handleLeave}
                 fill={fill}
-                stroke="#ffffff"
+                fillOpacity={fillOpacity}
+                stroke={stroke}
                 strokeWidth="1"
+                style={backgroundImage ? { pointerEvents: "all" } : undefined}
                 className="cursor-pointer transition-colors duration-150"
               />
-              <text
-                x={mid.x}
-                y={mid.y}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                className="pointer-events-none text-[13px] sm:text-[15px] font-bold"
-                fill={conquered ? window.readableTextColor(fill) : "#374151"}
-              >
-                {(() => {
-                  const lines = section.shortLines || [section.label];
-                  return lines.map((line, i) => (
-                    <tspan
-                      key={i}
-                      x={mid.x}
-                      dy={i === 0 ? (lines.length > 1 ? "-0.35em" : "0") : "1.1em"}
-                    >
-                      {line}
-                    </tspan>
-                  ));
-                })()}
-              </text>
+              {!backgroundImage && (
+                <text
+                  x={mid.x}
+                  y={mid.y}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  className="pointer-events-none text-[13px] sm:text-[15px] font-bold"
+                  fill={conquered ? window.readableTextColor(fill) : "#374151"}
+                >
+                  {(() => {
+                    const lines = section.shortLines || [section.label];
+                    return lines.map((line, i) => (
+                      <tspan
+                        key={i}
+                        x={mid.x}
+                        dy={i === 0 ? (lines.length > 1 ? "-0.35em" : "0") : "1.1em"}
+                      >
+                        {line}
+                      </tspan>
+                    ));
+                  })()}
+                </text>
+              )}
             </g>
           );
         })}
