@@ -164,6 +164,37 @@ function gocheokSections() {
   ];
 }
 
+// image/(구)잠실야구장.jpg 참고: 고척돔과 달리 내야가 층(1~4층)이 아니라 100/200/300번대
+// 3개 링이 하나로 이어진 단일 관중석이고, 그 위(외야 쪽)로 400번대 외야석이 한 바퀴 감싼다.
+// 각 링 모두 1루(홈)쪽 낮은 번호에서 시작해 홈플레이트 뒤를 지나 3루(원정)쪽 높은 번호로 갈수록
+// 번호가 커지는 하나의 연속된 흐름이다. 홈플레이트 바로 뒤에는 번호 없는 "테라존(프리미엄석)"이 있다.
+function jamsilOldSections() {
+  return [
+    {
+      id: "terrazone",
+      zone: "infield",
+      label: "테라존 (프리미엄석)",
+      shortLines: ["테라존"],
+      startAngle: -14,
+      endAngle: 14,
+      innerRadius: 48,
+      outerRadius: 72,
+    },
+
+    // 100번대(그라운드에서 가장 가까운 1층 박스석)
+    ...numberedRing("infield", rangeNums(101, 122).reverse(), -62, 62, 72, 130),
+
+    // 200번대
+    ...numberedRing("infield", rangeNums(201, 226).reverse(), -70, 70, 130, 200),
+
+    // 300번대(가장 바깥 내야 링, 코너 쪽까지 더 넓게 이어진다)
+    ...numberedRing("infield", rangeNums(301, 334).reverse(), -98, 98, 200, 290),
+
+    // 400번대(외야, 센터필드 위쪽을 한 바퀴 감싸는 단일 링)
+    ...numberedRing("outfield", rangeNums(401, 422).reverse(), -108, 108, 290, 360),
+  ];
+}
+
 // 모든 층·모든 구역에서 줄 간격(위아래)과 좌석 간격(좌우)을 이 값으로 통일한다.
 // 층마다 줄 간격이 제각각이면 위아래로 눌리거나 늘어나 보이므로, 실제 좌석 수만큼 세로 폭도 함께 늘어나게 한다.
 const SEAT_RADIUS = 4.3; // 좌석 점 크기(예전 3.2~3.4보다 키움)
@@ -482,6 +513,18 @@ window.VENUES = [
       center: { cx: 550, cy: 500 },
       screen: { zone: "outfield", startAngle: -8, endAngle: 8, innerRadius: 460, outerRadius: 495 },
       sections: gocheokSections(),
+    },
+  },
+  {
+    id: "jamsil-old",
+    name: "(구)잠실야구장",
+    category: "baseball",
+    map: {
+      kind: "wedge",
+      viewBox: "0 0 1100 980",
+      center: { cx: 550, cy: 500 },
+      screen: { zone: "outfield", startAngle: -8, endAngle: 8, innerRadius: 365, outerRadius: 395 },
+      sections: jamsilOldSections(),
     },
   },
   {

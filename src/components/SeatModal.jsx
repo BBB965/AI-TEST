@@ -209,7 +209,7 @@ window.SeatModal = function SeatModal({ venue, section, onClose, onSaved }) {
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-neutral-500 mb-1">공연 시작 (낮공/밤공 구분)</label>
+                <label className="block text-xs font-medium text-neutral-500 mb-1">공연 시작</label>
                 <input
                   type="time"
                   value={startTime}
