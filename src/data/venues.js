@@ -168,6 +168,11 @@ function gocheokSections() {
 // 3개 링이 하나로 이어진 단일 관중석이고, 그 위(외야 쪽)로 400번대 외야석이 한 바퀴 감싼다.
 // 각 링 모두 1루(홈)쪽 낮은 번호에서 시작해 홈플레이트 뒤를 지나 3루(원정)쪽 높은 번호로 갈수록
 // 번호가 커지는 하나의 연속된 흐름이다. 홈플레이트 바로 뒤에는 번호 없는 "테라존(프리미엄석)"이 있다.
+//
+// polarPoint()는 zone이 "outfield"면 y = cy - r*cos(angle), 아니면 y = cy + r*cos(angle)로 계산하는데
+// 이 두 식은 angle이 ±90도를 넘어가면 부호가 뒤집혀 반대쪽 절반으로 넘어가버린다. 그래서 내야(300번대)와
+// 외야(400번대) 링은 반드시 ±90도 "이내"로 끝나야 겹치지 않고, 정확히 ±90도에서 끝나야 그 지점(y=cy)에서
+// 내야 쪽과 외야 쪽이 이가 맞물리듯 이어져 하나의 완전한 원처럼 보인다.
 function jamsilOldSections() {
   return [
     {
@@ -177,21 +182,21 @@ function jamsilOldSections() {
       shortLines: ["테라존"],
       startAngle: -14,
       endAngle: 14,
-      innerRadius: 48,
-      outerRadius: 72,
+      innerRadius: 55,
+      outerRadius: 85,
     },
 
     // 100번대(그라운드에서 가장 가까운 1층 박스석)
-    ...numberedRing("infield", rangeNums(101, 122).reverse(), -62, 62, 72, 130),
+    ...numberedRing("infield", rangeNums(101, 122).reverse(), -68, 68, 85, 160),
 
     // 200번대
-    ...numberedRing("infield", rangeNums(201, 226).reverse(), -70, 70, 130, 200),
+    ...numberedRing("infield", rangeNums(201, 226).reverse(), -78, 78, 160, 240),
 
-    // 300번대(가장 바깥 내야 링, 코너 쪽까지 더 넓게 이어진다)
-    ...numberedRing("infield", rangeNums(301, 334).reverse(), -98, 98, 200, 290),
+    // 300번대(가장 바깥 내야 링, 정확히 ±90도까지 이어져 외야 링과 옆에서 맞물린다)
+    ...numberedRing("infield", rangeNums(301, 334).reverse(), -90, 90, 240, 345),
 
-    // 400번대(외야, 센터필드 위쪽을 한 바퀴 감싸는 단일 링)
-    ...numberedRing("outfield", rangeNums(401, 422).reverse(), -108, 108, 290, 360),
+    // 400번대(외야, 300번대와 정확히 같은 반지름·각도에서 이어받아 한 바퀴 완성한다)
+    ...numberedRing("outfield", rangeNums(401, 422).reverse(), -90, 90, 345, 420),
   ];
 }
 
@@ -523,7 +528,7 @@ window.VENUES = [
       kind: "wedge",
       viewBox: "0 0 1100 980",
       center: { cx: 550, cy: 500 },
-      screen: { zone: "outfield", startAngle: -8, endAngle: 8, innerRadius: 365, outerRadius: 395 },
+      screen: { zone: "outfield", startAngle: -8, endAngle: 8, innerRadius: 425, outerRadius: 455 },
       sections: jamsilOldSections(),
     },
   },
