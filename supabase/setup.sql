@@ -29,14 +29,25 @@ create policy "seat_entries_delete_own" on public.seat_entries
   for delete using (auth.uid() = user_id);
 -- (update 정책은 앱이 update를 쓰지 않으므로 생략. 필요해지면 동일 패턴으로 추가.)
 
--- 1-2. schedules: 티켓팅 등 venue와 무관한 독립 일정.
+-- 1-2. schedules: venue와 무관한 독립 일정. 처음 등록할 땐 "티켓팅 오픈 알림" 정보(제목/시각/
+-- 예매처/관람 예정 일시 후보 최대 3개)만 있는 상태로 만들고, 티켓팅에 성공하면 viewing_at 이하
+-- 컬럼을 채워서 실제(확정된) 관람 정보를 덧붙인다(이때 비로소 google_event_id가 채워지며 구글
+-- 캘린더 이벤트가 생긴다 — src/lib/schedules.js의 addViewingInfo 참고).
+-- ticketing_at은 리마인더(N분 전 푸시) 기준 시각으로만 쓰인다. vendor는 등록 시점에 이미 알고
+-- 있는 값(어디서 예매할지)을 넣어두고, 나중에 관람 정보 입력 때 그대로 프리필되거나 수정된다.
 create table if not exists public.schedules (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) default auth.uid(),
   title text not null,
-  event_at timestamptz not null,
+  ticketing_at timestamptz not null,
+  vendor text,
+  candidate_viewing_ats timestamptz[] not null default '{}',
+  viewing_at timestamptz,
+  venue_name text,
+  seat_info text,
   google_event_id text,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint schedules_candidate_viewing_ats_max3 check (array_length(candidate_viewing_ats, 1) is null or array_length(candidate_viewing_ats, 1) <= 3)
 );
 
 alter table public.schedules enable row level security;
@@ -50,10 +61,10 @@ create policy "schedules_update_own" on public.schedules for update using (auth.
 drop policy if exists "schedules_delete_own" on public.schedules;
 create policy "schedules_delete_own" on public.schedules for delete using (auth.uid() = user_id);
 
--- 1-3. schedule_reminders: 일정 하나에 여러 개의 "n분 전 알림".
--- user_id는 schedules.user_id를 복제 저장(RLS 단순화용), fire_at은 event_at - minutes_before.
+-- 1-3. schedule_reminders: 일정 하나에 여러 개의 "n분 전 알림"(티켓팅 오픈 기준).
+-- user_id는 schedules.user_id를 복제 저장(RLS 단순화용), fire_at은 ticketing_at - minutes_before.
 -- 둘 다 클라이언트가 아니라 트리거가 계산한다 (아래 참고) — GENERATED 컬럼으로는
--- 다른 테이블(schedules.event_at)을 참조할 수 없어서 트리거 방식을 쓴다.
+-- 다른 테이블(schedules.ticketing_at)을 참조할 수 없어서 트리거 방식을 쓴다.
 create table if not exists public.schedule_reminders (
   id uuid primary key default gen_random_uuid(),
   schedule_id uuid not null references public.schedules(id) on delete cascade,
@@ -66,14 +77,14 @@ create table if not exists public.schedule_reminders (
 
 alter table public.schedule_reminders enable row level security;
 
--- BEFORE INSERT 트리거: schedule_id가 가리키는 schedules 행에서 user_id/event_at을 읽어
+-- BEFORE INSERT 트리거: schedule_id가 가리키는 schedules 행에서 user_id/ticketing_at을 읽어
 -- user_id와 fire_at을 강제로 채운다. security definer라 RLS와 무관하게 schedules를 조회할 수 있다.
 -- 클라이언트가 남의 schedule_id를 넣어도, 트리거가 그 진짜 소유자로 user_id를 채우기 때문에
 -- 아래 INSERT 정책(auth.uid() = user_id)에서 결국 막힌다.
 create or replace function public.set_reminder_fields()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  select s.user_id, s.event_at - (new.minutes_before || ' minutes')::interval
+  select s.user_id, s.ticketing_at - (new.minutes_before || ' minutes')::interval
     into new.user_id, new.fire_at
   from public.schedules s
   where s.id = new.schedule_id;

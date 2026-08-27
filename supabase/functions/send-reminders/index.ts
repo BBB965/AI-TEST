@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
   const nowIso = new Date().toISOString();
   const { data: dueReminders, error } = await supabase
     .from("schedule_reminders")
-    .select("id, minutes_before, user_id, schedules(title, event_at)")
+    .select("id, minutes_before, user_id, schedules(title)")
     .is("sent_at", null)
     .lte("fire_at", nowIso);
 

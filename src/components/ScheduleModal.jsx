@@ -1,12 +1,29 @@
 const REMINDER_PRESETS = [60, 30, 10, 5];
 
+const MAX_CANDIDATE_VIEWING_ATS = 3;
+
 window.ScheduleModal = function ScheduleModal({ onClose, onSaved }) {
   const [title, setTitle] = React.useState("");
-  const [eventAt, setEventAt] = React.useState("");
+  const [ticketingAt, setTicketingAt] = React.useState("");
+  const [vendor, setVendor] = React.useState("");
+  const [candidateViewingAts, setCandidateViewingAts] = React.useState([]);
   const [selectedMinutes, setSelectedMinutes] = React.useState([30, 10]);
   const [customMinutes, setCustomMinutes] = React.useState("");
   const [saving, setSaving] = React.useState(false);
   const [error, setError] = React.useState("");
+
+  function addCandidateViewingAt() {
+    if (candidateViewingAts.length >= MAX_CANDIDATE_VIEWING_ATS) return;
+    setCandidateViewingAts((prev) => [...prev, ""]);
+  }
+
+  function updateCandidateViewingAt(index, value) {
+    setCandidateViewingAts((prev) => prev.map((v, i) => (i === index ? value : v)));
+  }
+
+  function removeCandidateViewingAt(index) {
+    setCandidateViewingAts((prev) => prev.filter((_, i) => i !== index));
+  }
 
   function toggleMinute(m) {
     setSelectedMinutes((prev) =>
@@ -25,7 +42,7 @@ window.ScheduleModal = function ScheduleModal({ onClose, onSaved }) {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!title.trim() || !eventAt) {
+    if (!title.trim() || !ticketingAt) {
       setError("제목과 일시는 꼭 입력해주세요.");
       return;
     }
@@ -36,18 +53,15 @@ window.ScheduleModal = function ScheduleModal({ onClose, onSaved }) {
     setSaving(true);
     setError("");
     try {
-      const { calendarError } = await window.addSchedule({
+      await window.addSchedule({
         title: title.trim(),
-        eventAt,
+        ticketingAt,
         reminderMinutes: selectedMinutes,
+        vendor: vendor.trim(),
+        candidateViewingAts: candidateViewingAts.filter(Boolean),
       });
-      // 일정 저장 자체는 이미 끝났으니 재제출로 중복 생성되지 않도록 모달은 항상 닫는다.
-      // 캘린더 연동만 실패했으면 별도 알림으로만 알려준다.
       onSaved();
       onClose();
-      if (calendarError) {
-        alert("일정은 저장됐지만 구글 캘린더 등록엔 실패했어요: " + calendarError);
-      }
     } catch (err) {
       setError((err && err.message) || "저장에 실패했어요.");
       setSaving(false);
@@ -86,13 +100,56 @@ window.ScheduleModal = function ScheduleModal({ onClose, onSaved }) {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-neutral-500 mb-1">일시</label>
+            <label className="block text-xs font-medium text-neutral-500 mb-1">티켓팅 오픈 일시</label>
             <input
               type="datetime-local"
-              value={eventAt}
-              onChange={(e) => setEventAt(e.target.value)}
+              value={ticketingAt}
+              onChange={(e) => setTicketingAt(e.target.value)}
               className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-400"
             />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-neutral-500 mb-1">예매처</label>
+            <input
+              value={vendor}
+              onChange={(e) => setVendor(e.target.value)}
+              placeholder="예: 인터파크, 예스24"
+              className="w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-400"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-neutral-500 mb-1">
+              관람 예정 일시 (최대 {MAX_CANDIDATE_VIEWING_ATS}개)
+            </label>
+            <div className="space-y-2">
+              {candidateViewingAts.map((v, i) => (
+                <div key={i} className="flex gap-2">
+                  <input
+                    type="datetime-local"
+                    value={v}
+                    onChange={(e) => updateCandidateViewingAt(i, e.target.value)}
+                    className="flex-1 rounded-lg border border-neutral-200 px-3 py-2 text-sm outline-none focus:border-neutral-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeCandidateViewingAt(i)}
+                    className="text-neutral-400 hover:text-red-500 text-sm px-2"
+                    aria-label="후보 삭제"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+            {candidateViewingAts.length < MAX_CANDIDATE_VIEWING_ATS && (
+              <button
+                type="button"
+                onClick={addCandidateViewingAt}
+                className="mt-2 text-xs font-semibold text-neutral-500 hover:text-neutral-700"
+              >
+                + 관람 예정 일시 추가
+              </button>
+            )}
           </div>
           <div>
             <label className="block text-xs font-medium text-neutral-500 mb-1">알림 (몇 분 전)</label>

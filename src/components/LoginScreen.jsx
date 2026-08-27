@@ -17,9 +17,9 @@ window.LoginScreen = function LoginScreen() {
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900 flex items-center justify-center px-4">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-neutral-200 p-8 text-center">
-        <h1 className="text-2xl font-bold tracking-tight">직관 도장깨기</h1>
+        <h1 className="text-2xl font-bold tracking-tight">티켓북</h1>
         <p className="text-neutral-500 text-sm mt-2">
-          다녀온 좌석을 기록하고, 티켓팅 일정도 놓치지 마세요
+          예매 일정도, 다녀온 좌석 기록도 한 곳에서
         </p>
 
         <button

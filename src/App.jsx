@@ -1,5 +1,4 @@
 window.App = function App() {
-  const [view, setView] = React.useState("seats"); // "seats" | "schedule"
   const [category, setCategory] = React.useState(window.CATEGORIES[0].id);
   const venues = window.VENUES.filter((v) => v.category === category);
 
@@ -87,100 +86,73 @@ window.App = function App() {
       </header>
 
       <main className="max-w-3xl mx-auto px-4 pb-16">
-        <div className="flex gap-2 mb-4">
-          {[
-            { id: "seats", label: "좌석 기록" },
-            { id: "schedule", label: "일정" },
-          ].map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setView(t.id)}
-              className={
-                "px-4 py-2 rounded-xl text-sm font-semibold border transition-colors " +
-                (view === t.id
-                  ? "bg-neutral-900 text-white border-transparent"
-                  : "bg-white border-neutral-200 text-neutral-500 hover:border-neutral-300")
-              }
-            >
-              {t.label}
-            </button>
-          ))}
+        <window.CategorySelector selectedId={category} onSelect={handleCategorySelect} />
+
+        <div className="mt-4">
+          {venues.length > 0 ? (
+            <window.VenueSelector
+              venues={venues}
+              selectedId={venueId}
+              onSelect={handleVenueSelect}
+            />
+          ) : (
+            <p className="text-sm text-neutral-400 py-2">
+              아직 등록된 경기장/공연장이 없어요. 조금만 기다려주세요!
+            </p>
+          )}
         </div>
 
-        {view === "schedule" && <window.ScheduleView />}
-
-        {view === "seats" && (
-          <>
-            <window.CategorySelector selectedId={category} onSelect={handleCategorySelect} />
-
-            <div className="mt-4">
-              {venues.length > 0 ? (
-                <window.VenueSelector
-                  venues={venues}
-                  selectedId={venueId}
-                  onSelect={handleVenueSelect}
-                />
-              ) : (
-                <p className="text-sm text-neutral-400 py-2">
-                  아직 등록된 경기장/공연장이 없어요. 조금만 기다려주세요!
-                </p>
-              )}
-            </div>
-
-            {venue && (
-              <div className="mt-6 bg-white rounded-2xl shadow-sm border border-neutral-200 p-4 sm:p-6">
-                <div className="flex items-center justify-between mb-4 gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <select
-                      value={showFilter}
-                      onChange={(e) => setShowFilter(e.target.value)}
-                      className="text-xs border border-neutral-200 rounded-lg px-2 py-1.5 text-neutral-600 outline-none focus:border-neutral-400 bg-white shrink-0"
-                    >
-                      <option value="all">전체 보기</option>
-                      {showTitles.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
-                      ))}
-                    </select>
-                    {!loadingEntries && showFilter !== "all" && (
-                      <span className="text-xs text-neutral-500 whitespace-nowrap overflow-hidden text-ellipsis min-w-0">
-                        관람 {filteredVisitCount}회
-                        {showInfo && showInfo.totalRounds ? ` / 총 ${showInfo.totalRounds}회` : ""}
-                        {" · "}
-                        {venue.map.kind === "wedge" ? "구역" : "좌석"} {filteredSeatCount}
-                        {venue.map.kind === "wedge" ? "곳" : "석"}
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-xs text-neutral-400 whitespace-nowrap shrink-0">
-                    {loadingEntries
-                      ? "불러오는 중..."
-                      : `${conqueredCount} / ${venue.map.sections.length} ${
-                          venue.map.kind === "wedge" ? "구역" : "좌석"
-                        } 완료`}
+        {venue && (
+          <div className="mt-6 bg-white rounded-2xl shadow-sm border border-neutral-200 p-4 sm:p-6">
+            <div className="flex items-center justify-between mb-4 gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <select
+                  value={showFilter}
+                  onChange={(e) => setShowFilter(e.target.value)}
+                  className="text-xs border border-neutral-200 rounded-lg px-2 py-1.5 text-neutral-600 outline-none focus:border-neutral-400 bg-white shrink-0"
+                >
+                  <option value="all">전체 보기</option>
+                  {showTitles.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                {!loadingEntries && showFilter !== "all" && (
+                  <span className="text-xs text-neutral-500 whitespace-nowrap overflow-hidden text-ellipsis min-w-0">
+                    관람 {filteredVisitCount}회
+                    {showInfo && showInfo.totalRounds ? ` / 총 ${showInfo.totalRounds}회` : ""}
+                    {" · "}
+                    {venue.map.kind === "wedge" ? "구역" : "좌석"} {filteredSeatCount}
+                    {venue.map.kind === "wedge" ? "곳" : "석"}
                   </span>
-                </div>
-
-                {venue.map.kind === "wedge" ? (
-                  <window.WedgeMap
-                    key={venue.id + "-" + version}
-                    venue={venue}
-                    onSectionClick={handleSectionClick}
-                    entriesFor={filteredEntriesFor}
-                  />
-                ) : (
-                  <window.BlockMap
-                    key={venue.id + "-" + version}
-                    venue={venue}
-                    onSectionClick={handleSectionClick}
-                    entriesFor={filteredEntriesFor}
-                  />
                 )}
               </div>
+              <span className="text-xs text-neutral-400 whitespace-nowrap shrink-0">
+                {loadingEntries
+                  ? "불러오는 중..."
+                  : `${conqueredCount} / ${venue.map.sections.length} ${
+                      venue.map.kind === "wedge" ? "구역" : "좌석"
+                    } 완료`}
+              </span>
+            </div>
+
+            {venue.map.kind === "wedge" ? (
+              <window.WedgeMap
+                key={venue.id + "-" + version}
+                venue={venue}
+                onSectionClick={handleSectionClick}
+                entriesFor={filteredEntriesFor}
+              />
+            ) : (
+              <window.BlockMap
+                key={venue.id + "-" + version}
+                venue={venue}
+                onSectionClick={handleSectionClick}
+                entriesFor={filteredEntriesFor}
+              />
             )}
-          </>
+          </div>
         )}
       </main>
 

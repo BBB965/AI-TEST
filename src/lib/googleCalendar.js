@@ -12,11 +12,17 @@ async function getProviderToken() {
   return token;
 }
 
-// eventAtISO 시각에 30분짜리 이벤트를 기본 캘린더(primary)에 만들고 이벤트 id를 반환한다.
-window.createCalendarEvent = async function createCalendarEvent(title, eventAtISO) {
+// startAtISO 시각에 이벤트를 기본 캘린더(primary)에 만들고 이벤트 id를 반환한다.
+// durationMinutes 기본값 180(3시간)은 티켓팅 오픈 알림용 짧은 이벤트가 아니라
+// 실제 공연/경기 관람 일정을 기준으로 잡은 값이다.
+window.createCalendarEvent = async function createCalendarEvent(
+  title,
+  startAtISO,
+  { description, durationMinutes = 180 } = {}
+) {
   const token = await getProviderToken();
-  const start = new Date(eventAtISO);
-  const end = new Date(start.getTime() + 30 * 60 * 1000);
+  const start = new Date(startAtISO);
+  const end = new Date(start.getTime() + durationMinutes * 60 * 1000);
 
   const res = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
     method: "POST",
@@ -26,6 +32,7 @@ window.createCalendarEvent = async function createCalendarEvent(title, eventAtIS
     },
     body: JSON.stringify({
       summary: title,
+      description: description || undefined,
       start: { dateTime: start.toISOString() },
       end: { dateTime: end.toISOString() },
     }),

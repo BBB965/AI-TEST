@@ -1,6 +1,6 @@
 {
-  "name": "직관 도장깨기",
-  "short_name": "직관도장깨기",
+  "name": "티켓북",
+  "short_name": "티켓북",
   "description": "다녀온 좌석을 기록하고, 티켓팅 일정도 놓치지 마세요",
   "start_url": ".",
   "scope": ".",
