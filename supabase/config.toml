@@ -1,0 +1,5 @@
+# pg_cron이 이 함수를 호출할 때 Supabase 발급 JWT가 아니라 자체 CRON_SECRET을 쓰기 때문에,
+# verify_jwt를 꺼두지 않으면 게이트웨이가 요청을 401로 막아버려서 함수 코드가 아예 실행되지 않는다.
+# (인증 자체는 함수 내부에서 CRON_SECRET을 직접 검증하는 걸로 대체한다.)
+[functions.send-reminders]
+verify_jwt = false

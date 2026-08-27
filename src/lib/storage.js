@@ -19,6 +19,10 @@ function getClient() {
   return supabaseClient;
 }
 
+// auth.js/schedules.js/googleCalendar.js/push.js가 같은 클라이언트 인스턴스를 공유하도록 노출한다.
+// (createClient()를 여러 번 부르면 세션 상태가 어긋날 수 있다.)
+window.getSupabaseClient = getClient;
+
 const cache = {}; // { [venueId]: { [sectionId]: entry[] } }
 
 function rowToEntry(row) {
