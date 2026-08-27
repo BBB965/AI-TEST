@@ -24,6 +24,8 @@ window.BlockMap = function BlockMap({ venue, onSectionClick, entriesFor }) {
   const svgRef = React.useRef(null);
   const pointers = React.useRef(new Map()); // pointerId -> {x, y} (클라이언트 좌표)
   const lastPinchDist = React.useRef(null);
+  const pressRef = React.useRef(null); // 좌석 위에서 눌렀을 때 {x, y, pointerId, section}
+  const TAP_THRESHOLD = 6; // 이 거리(px) 안에서 떼면 드래그가 아니라 탭(클릭)으로 본다
   const getSectionEntries = entriesFor || ((sectionId) => window.getEntries(venue.id, sectionId));
 
   const isZoomed = view.w < original.w - 0.001;
@@ -94,6 +96,18 @@ window.BlockMap = function BlockMap({ venue, onSectionClick, entriesFor }) {
   function handlePointerUp(e) {
     pointers.current.delete(e.pointerId);
     if (pointers.current.size < 2) lastPinchDist.current = null;
+
+    // setPointerCapture로 포인터를 svg에 잡아두면 브라우저가 click 이벤트를 원래
+    // 눌렀던 좌석(rect)이 아니라 svg 쪽으로 흘려버려서, 좌석의 onClick이 아예 안 먹힌다.
+    // 그래서 pointerdown/up 좌표 차이로 직접 "탭"을 판정해서 클릭을 대신 처리한다.
+    const press = pressRef.current;
+    if (press && press.pointerId === e.pointerId) {
+      const dist = Math.hypot(e.clientX - press.x, e.clientY - press.y);
+      if (dist <= TAP_THRESHOLD) {
+        onSectionClick(press.section);
+      }
+    }
+    pressRef.current = null;
   }
 
   function handleDoubleClick(e) {
@@ -246,6 +260,9 @@ window.BlockMap = function BlockMap({ venue, onSectionClick, entriesFor }) {
               rx={1.4}
               ry={1.4}
               onClick={() => onSectionClick(section)}
+              onPointerDown={(e) => {
+                pressRef.current = { x: e.clientX, y: e.clientY, pointerId: e.pointerId, section };
+              }}
               onMouseEnter={(e) => handleEnter(e, section)}
               onMouseLeave={handleLeave}
               fill={fill}
