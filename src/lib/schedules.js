@@ -4,7 +4,7 @@
 window.SCHEDULES_TABLE = "schedules";
 window.SCHEDULE_REMINDERS_TABLE = "schedule_reminders";
 
-let cache = []; // schedule[] (각 항목에 reminders: reminder[] 포함), ticketing_at 오름차순
+let scheduleCache = []; // schedule[] (각 항목에 reminders: reminder[] 포함), ticketing_at 오름차순
 
 function rowToSchedule(row) {
   return {
@@ -34,11 +34,11 @@ window.loadAllSchedules = async function loadAllSchedules() {
     console.error("[schedules] loadAllSchedules 실패:", error);
     return;
   }
-  cache = (data || []).map(rowToSchedule);
+  scheduleCache = (data || []).map(rowToSchedule);
 };
 
 window.getSchedules = function getSchedules() {
-  return cache;
+  return scheduleCache;
 };
 
 // title/ticketingAt(로컬 datetime-local 문자열)/reminderMinutes(예: [30, 10])로 일정을 만든다.
@@ -88,7 +88,7 @@ window.addSchedule = async function addSchedule({
   }
 
   const schedule = rowToSchedule({ ...scheduleRow, schedule_reminders: reminders });
-  cache = [...cache, schedule].sort((a, b) => new Date(a.ticketingAt) - new Date(b.ticketingAt));
+  scheduleCache = [...scheduleCache, schedule].sort((a, b) => new Date(a.ticketingAt) - new Date(b.ticketingAt));
   return schedule;
 };
 
@@ -100,7 +100,7 @@ window.addViewingInfo = async function addViewingInfo(
 ) {
   const client = window.getSupabaseClient();
   if (!client) throw new Error("Supabase 설정이 안 됐어요.");
-  const schedule = cache.find((s) => s.id === scheduleId);
+  const schedule = scheduleCache.find((s) => s.id === scheduleId);
   if (!schedule) throw new Error("일정을 찾을 수 없어요.");
 
   const viewingAtISO = new Date(viewingAt).toISOString();
@@ -144,14 +144,14 @@ window.addViewingInfo = async function addViewingInfo(
   if (error) throw error;
 
   const updated = rowToSchedule(updatedRow);
-  cache = cache.map((s) => (s.id === scheduleId ? updated : s));
+  scheduleCache = scheduleCache.map((s) => (s.id === scheduleId ? updated : s));
   return { schedule: updated, calendarError };
 };
 
 window.deleteSchedule = async function deleteSchedule(id) {
   const client = window.getSupabaseClient();
   if (!client) throw new Error("Supabase 설정이 안 됐어요.");
-  const schedule = cache.find((s) => s.id === id);
+  const schedule = scheduleCache.find((s) => s.id === id);
 
   if (schedule && schedule.googleEventId) {
     try {
@@ -163,5 +163,5 @@ window.deleteSchedule = async function deleteSchedule(id) {
 
   const { error } = await client.from(window.SCHEDULES_TABLE).delete().eq("id", id);
   if (error) throw error;
-  cache = cache.filter((s) => s.id !== id);
+  scheduleCache = scheduleCache.filter((s) => s.id !== id);
 };
