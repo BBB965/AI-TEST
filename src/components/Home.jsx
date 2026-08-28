@@ -18,7 +18,11 @@ window.Home = function Home({ session }) {
           </button>
         )}
         <div className="flex items-center gap-3">
-          <span className="truncate max-w-[200px]">{session.user.email}</span>
+          <span className="truncate max-w-[200px]">
+            {session.user.user_metadata?.full_name ||
+              session.user.user_metadata?.name ||
+              session.user.email}
+          </span>
           <button
             type="button"
             onClick={() => window.signOut()}
