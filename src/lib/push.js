@@ -11,6 +11,14 @@ function urlBase64ToUint8Array(base64String) {
   return outputArray;
 }
 
+// 이미 이 기기에서 켠 적 있는 구독이 있는지 확인만 한다 (권한 프롬프트 없이, 조용히).
+window.getPushSubscription = async function getPushSubscription() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) return null;
+  const registration = await navigator.serviceWorker.getRegistration();
+  if (!registration) return null;
+  return registration.pushManager.getSubscription();
+};
+
 window.registerPushNotifications = async function registerPushNotifications() {
   if (!window.VAPID_PUBLIC_KEY || window.VAPID_PUBLIC_KEY === "YOUR_VAPID_PUBLIC_KEY") {
     throw new Error("푸시 설정이 안 됐어요. src/data/pushConfig.js를 확인해주세요.");

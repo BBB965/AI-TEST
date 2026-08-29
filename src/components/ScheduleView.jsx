@@ -27,6 +27,12 @@ window.ScheduleView = function ScheduleView() {
     refresh().then(() => setLoading(false));
   }, [refresh]);
 
+  React.useEffect(() => {
+    window.getPushSubscription().then((subscription) => {
+      if (subscription) setPushState("on");
+    });
+  }, []);
+
   async function handleDelete(id) {
     try {
       await window.deleteSchedule(id);
