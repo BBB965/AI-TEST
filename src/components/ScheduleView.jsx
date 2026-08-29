@@ -95,9 +95,11 @@ window.ScheduleView = function ScheduleView() {
             )}
           </div>
           {pushError && <p className="text-xs text-red-500 mt-2">{pushError}</p>}
-          <p className="text-[11px] text-neutral-400 mt-2">
-            iOS(아이폰)는 사파리에서 "홈 화면에 추가"로 설치해야 알림이 와요 (iOS 16.4 이상).
-          </p>
+          {pushState !== "on" && (
+            <p className="text-[11px] text-neutral-400 mt-2">
+              iOS(아이폰)는 사파리에서 "홈 화면에 추가"로 설치해야 알림이 와요 (iOS 16.4 이상).
+            </p>
+          )}
         </div>
 
         {loading ? (
