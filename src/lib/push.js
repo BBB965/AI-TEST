@@ -12,11 +12,17 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 // 이미 이 기기에서 켠 적 있는 구독이 있는지 확인만 한다 (권한 프롬프트 없이, 조용히).
+// getRegistration()(단수, 현재 문서 URL에 스코프가 맞는 등록만 찾음)은 iOS PWA 콜드 스타트
+// 직후 서비스워커가 아직 준비되기 전이면 등록을 못 찾고 undefined를 반환하는 경우가 있어서,
+// 스코프 매칭 없이 이 오리진의 모든 등록을 가져오는 getRegistrations()를 대신 쓴다.
 window.getPushSubscription = async function getPushSubscription() {
   if (!("serviceWorker" in navigator) || !("PushManager" in window)) return null;
-  const registration = await navigator.serviceWorker.getRegistration();
-  if (!registration) return null;
-  return registration.pushManager.getSubscription();
+  const registrations = await navigator.serviceWorker.getRegistrations();
+  if (!registrations.length) return null;
+  const subscriptions = await Promise.all(
+    registrations.map((registration) => registration.pushManager.getSubscription())
+  );
+  return subscriptions.find((subscription) => subscription) || null;
 };
 
 window.registerPushNotifications = async function registerPushNotifications() {
