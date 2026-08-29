@@ -4,21 +4,28 @@ const HUB_ITEMS = [
   { id: null, emoji: "✨", label: "새 기능 준비중", enabled: false },
 ];
 
-window.HubScreen = function HubScreen({ onSelect }) {
+window.HubScreen = function HubScreen({ session, onSelect }) {
+  const avatarUrl = session && session.user.user_metadata?.avatar_url;
   return (
     <div className="max-w-sm mx-auto px-4 pt-10 pb-16">
-      <div
-        className="rounded-3xl px-6 py-10 text-center text-white"
-        style={{ background: `linear-gradient(160deg, ${window.BURGUNDY}, #3f0f1c)` }}
-      >
-        <div className="w-16 h-16 mx-auto rounded-full bg-white/15 flex items-center justify-center text-2xl">
-          🎫
+      <div className="text-center">
+        <div
+          className="w-16 h-16 mx-auto rounded-full overflow-hidden bg-neutral-100 flex items-center justify-center text-2xl border-[3px]"
+          style={{ borderColor: window.BURGUNDY }}
+        >
+          {avatarUrl ? (
+            <img src={avatarUrl} alt="" className="w-full h-full object-cover" />
+          ) : (
+            "🎫"
+          )}
         </div>
-        <h1 className="mt-4 text-2xl font-bold tracking-tight">티켓북</h1>
-        <p className="mt-1 text-sm text-white/70">예매도, 관람 기록도 한 곳에서</p>
+        <h1 className="mt-4 text-2xl font-bold tracking-tight" style={{ color: window.BURGUNDY }}>
+          티켓북
+        </h1>
+        <p className="mt-1 text-sm text-neutral-500">예매도, 관람 기록도 한 곳에서</p>
       </div>
 
-      <div className="mt-6 space-y-3">
+      <div className="mt-16 space-y-3">
         {HUB_ITEMS.map((item) => (
           <button
             key={item.label}

@@ -33,7 +33,7 @@ window.Home = function Home({ session }) {
         </div>
       </div>
 
-      {screen === "hub" && <window.HubScreen onSelect={setScreen} />}
+      {screen === "hub" && <window.HubScreen session={session} onSelect={setScreen} />}
       {screen === "schedule" && <window.ScheduleView />}
       {screen === "seats" && <window.App />}
     </div>
