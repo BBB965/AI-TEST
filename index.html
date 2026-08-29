@@ -18,6 +18,10 @@
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }
+  /* iOS Safari는 입력 요소 글자 크기가 16px 미만이면 포커스 시 화면을 자동 확대한다. */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
 </style>
 <script src="https://cdn.tailwindcss.com"></script>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
